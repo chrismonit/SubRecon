@@ -235,7 +235,6 @@ public class SubRecon {
         
         double sumConditionalL = 0.0; // for sanity check
         
-        //double scalingCorrection = Math.exp(betaScalingCount.get() + gammaScalingCount.get() + deltaScalingCount.get());
         double scalingCorrection = betaScalingCount.get() + gammaScalingCount.get() + deltaScalingCount.get();
         
         // TODO this is much more efficient for speed, at the expense of more memory use
@@ -283,12 +282,7 @@ public class SubRecon {
                 
                 double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection;
                 branchProbs[iAlpha][iDelta] = Math.exp(conditionalLL - marginalLL);
-
-                //double correctedConditionalL = conditionalL * scalingCorrection;
-                //branchProbs[iAlpha][iDelta] = correctedConditionalL   / correctedMarginalL;
-                //System.out.println("correctedConditionalL="+correctedConditionalL+"\t"+"correctedMarginalL="+correctedMarginalL);
-                sumConditionalL += Math.exp(conditionalLL);
-                                
+                sumConditionalL += Math.exp(conditionalLL); // for sanity checks
             }// iDelta
         }// iAlpha
         
