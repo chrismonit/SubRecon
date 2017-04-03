@@ -226,16 +226,17 @@ public class SubRecon {
 
         // compute marginal lnl
         
-        double marginalL = computeTotalL(site, marginalScalingCount); // not corrected for scaling
-        double logMarginalL = Math.log(marginalL);
-        double correctedLogMarginalL = logMarginalL + marginalScalingCount.get() ;
-        double correctedMarginalL = Math.exp(correctedLogMarginalL);
-
+        double scaledMarginalL = computeTotalL(site, marginalScalingCount); // not corrected for scaling
+        double scaledMarginalLL = Math.log(scaledMarginalL);
+        double marginalLL = scaledMarginalLL + marginalScalingCount.get(); // correcting for scaling
+        double marginalL = Math.exp(marginalLL); // used in sanity checks below
+        
         double[][] branchProbs = new double[pi.length][pi.length]; // stores the 400 transition probs for branch of interest
         
         double sumConditionalL = 0.0; // for sanity check
         
-        double scalingCorrection = Math.exp(betaScalingCount.get() + gammaScalingCount.get() + deltaScalingCount.get());
+        //double scalingCorrection = Math.exp(betaScalingCount.get() + gammaScalingCount.get() + deltaScalingCount.get());
+        double scalingCorrection = betaScalingCount.get() + gammaScalingCount.get() + deltaScalingCount.get();
         
         // TODO this is much more efficient for speed, at the expense of more memory use
         // can we reduce memory use somehow?
@@ -260,7 +261,7 @@ public class SubRecon {
             
             for (int iDelta = 0; iDelta < pi.length; iDelta++) {
                 
-                double conditionalL = 0.0; // conditional L of iAlpha->iDelta transition along branch connecting nodes alpha and delta
+                double scaledConditionalL = 0.0; // conditional L of iAlpha->iDelta transition along branch connecting nodes alpha and delta
                 
                  // alpha -> delta
                 double alphaDeltaTerm = alphaDeltaProbs[iAlpha][iDelta] * deltaConditionals[iDelta];
@@ -275,13 +276,18 @@ public class SubRecon {
                         // alpha -> gamma
                         double alphaGammaTerm = alphaGammaProbs[iAlpha][iGamma] * gammaConditionals[iGamma];
                                                 
-                        conditionalL += alphaOnlyTerm * alphaDeltaTerm * alphaBetaTerm * alphaGammaTerm;
+                        scaledConditionalL += alphaOnlyTerm * alphaDeltaTerm * alphaBetaTerm * alphaGammaTerm;
                         
                     }// iGamma
                 }// iBeta
-                double correctedConditionalL = conditionalL * scalingCorrection;
-                branchProbs[iAlpha][iDelta] = correctedConditionalL   / correctedMarginalL;
-                sumConditionalL += correctedConditionalL;
+                
+                double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection;
+                branchProbs[iAlpha][iDelta] = Math.exp(conditionalLL - marginalLL);
+
+                //double correctedConditionalL = conditionalL * scalingCorrection;
+                //branchProbs[iAlpha][iDelta] = correctedConditionalL   / correctedMarginalL;
+                //System.out.println("correctedConditionalL="+correctedConditionalL+"\t"+"correctedMarginalL="+correctedMarginalL);
+                sumConditionalL += Math.exp(conditionalLL);
                                 
             }// iDelta
         }// iAlpha
@@ -299,13 +305,13 @@ public class SubRecon {
             throw new RuntimeException("ERROR: Branch transition probabilities do not sum to 1.0. Instead: "+probSum);
         }
         
-        if (sumConditionalL < correctedMarginalL-Constants.EPSILON || sumConditionalL > correctedMarginalL+Constants.EPSILON) {
-            System.out.println("corrected marginalL "+correctedMarginalL);
+        if (sumConditionalL < marginalL-Constants.EPSILON || sumConditionalL > marginalL+Constants.EPSILON) {
+            System.out.println("corrected marginalL "+marginalL);
             System.out.println("sum "+sumConditionalL);
             throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal");
         }
         
-        return new SiteResult(site, correctedLogMarginalL, branchProbs, threshold, sortByProb);
+        return new SiteResult(site, marginalLL, branchProbs, threshold, sortByProb);
         
     } // analyseSites
     
