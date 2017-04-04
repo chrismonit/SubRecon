@@ -19,6 +19,7 @@ public class SiteResult {
     
     private AminoAcids aa;
     
+    private double maxIIProb; // branchProb[i][j] where i==j
     
     
     public int getSite(){
@@ -30,7 +31,7 @@ public class SiteResult {
     }
         
     public SiteResult(int site, double marginalLnL, double[][] branchProbs, 
-            double threshold, boolean ignoreII, String delimiter, boolean sortByProb){
+            double threshold, String delimiter, boolean sortByProb){
         
         // NB deliberately do not assign branchProbs to a field, because it is large and dont want it to persist in memory
         this.site = site;
@@ -41,12 +42,16 @@ public class SiteResult {
         
         this.aa = AminoAcids.DEFAULT_INSTANCE;
         
+        this.maxIIProb = -1.;
+        
         // save the reisdue pairs with high probabilities
         // eg V->A, 0.99 etc
         for (int i = 0; i < branchProbs.length; i++) {
             for (int j = 0; j < branchProbs[0].length; j++) {
                 
-                if (ignoreII && i==j) continue;
+                if (i==j) {
+                    this.maxIIProb = Math.max(maxIIProb, branchProbs[i][j]);
+                }
                 
                 if (branchProbs[i][j] >= threshold) {
                     aboveThreshProbs.add(branchProbs[i][j]);
@@ -60,11 +65,11 @@ public class SiteResult {
             sortByProb();
         }
         
-    }// site result
+    }// constructor
     
     public SiteResult(int site, double marginalLnL, double[][] branchProbs, double threshold, boolean sortByProb){
-        this(site, marginalLnL, branchProbs, threshold, false, Constants.DELIM, sortByProb);
-    }
+        this(site, marginalLnL, branchProbs, threshold, Constants.DELIM, sortByProb);
+    } // constructor
     
     
     private void sortByProb(){
@@ -81,6 +86,10 @@ public class SiteResult {
     
     }
     
+
+    public double getMaxIIProb(){
+        return maxIIProb;
+    }
     
     @Override
     public String toString(){

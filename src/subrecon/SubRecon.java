@@ -65,6 +65,7 @@ public class SubRecon {
     
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
+    private boolean verbose;
     
     private CommandArgs comArgs;
     
@@ -75,15 +76,19 @@ public class SubRecon {
     }
     
     public void run(String[] args){
-        
         this.init(args);
         
-        if (site < 0) { // default site value. User has not specified a site to analyse
+        if (site < 0) { // default site value. User has not specified a site to analyse, so we analyse all of them
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
-                System.out.println(analyseSite(iSite));
+                
+                SiteResult result = analyseSite(iSite);
+                if (verbose || result.getMaxIIProb() <= 1.-threshold) {
+                    System.out.println(result);
+                }// else print nothing
+                
             }
         }else{
-            System.out.println(analyseSite(site));
+            System.out.println(analyseSite(site)); // a single named site is being analysed
         }
 
     }
@@ -112,6 +117,7 @@ public class SubRecon {
         this.site = comArgs.getSite(); // default value is -1, meaning analyse all sites
         this.sortByProb = !comArgs.getNoSort();
         this.threshold =  comArgs.getThreshold();
+        this.verbose = comArgs.getVerbose();
         
         if (site > alignment.getLength()-1) {
             throw new RuntimeException("ERROR: -site value is greater than the number of sites in the alignment");

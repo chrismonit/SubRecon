@@ -18,6 +18,6 @@ public class Constants {
     
     public static final String DELIM = "\t";
     public static final String SUB_PROB_DELIM = ":"; // delimiter between sub codes and prob. e.g., if SUB_PROB_DELIM==":" then output is "VA:0.99"
-    public static final int SIG_DIGITS = 4;
+    public static final int SIG_DIGITS = 2;
     
 }

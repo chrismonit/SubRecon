@@ -114,10 +114,17 @@ public class CommandArgs {
     }
     
     @Parameter(names = {"-threshold"}, required = false, description = "Minimum probability value for a substitution to be displayed ('-threshold 0.0' will print all 400 possibilities)")
-    private double threshold = 1e-3;
-    
+    private double threshold = 1./Math.pow(10., (double)Constants.SIG_DIGITS);
+        
     public double getThreshold(){
         return threshold;
     }
 
+    @Parameter(names = {"-verbose", "-v"}, required = false, description = "Print results for all sites, including those where Prob(I->I) >= 1 - [threshold] (these are omitted by default)")
+    private boolean verbose = false;
+    
+    public boolean getVerbose(){
+        return verbose;
+    }
+    
 }
