@@ -76,6 +76,7 @@ public class SubRecon {
     }
     
     public void run(String[] args){
+        printHeader();
         this.init(args);
         
         if (site < 0) { // default site value. User has not specified a site to analyse, so we analyse all of them
@@ -93,6 +94,12 @@ public class SubRecon {
 
     }
     
+    private void printHeader(){
+        System.out.println("--- SubRecon ---");
+        System.out.println("Chris Monit, Spring 2017, UCL, London");
+        System.out.println("----------------");
+        //System.out.println("Please cite: "); // TODO
+    }
     
     private void init(String[] args){
 
