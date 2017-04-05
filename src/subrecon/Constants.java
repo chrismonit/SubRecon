@@ -6,7 +6,7 @@ package subrecon;
  */
 public class Constants {
     
-    public static final String NAME = "BranchStates";
+    public static final String NAME = "SubRecon";
     
     public static final String DAYHOFF_ID = "dayhoff";
     public static final String JTT_ID = "jtt";

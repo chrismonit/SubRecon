@@ -17,7 +17,7 @@ public class CommandArgs {
     }
     
     
-    @Parameter(names = {"-tree", "-t"}, required = true, description = "Newick format tree file, rooted on the branch of interest")
+    @Parameter(names = {"-tree", "-t"}, required = true, description = "Newick format tree file, rooted on the branch of interest (NB branch lengths should have been estimated in advance with the same model specified here)")
     private String treePath;
     
     public String getTreePath(){
@@ -33,7 +33,7 @@ public class CommandArgs {
     }
     
     // model 
-    @Parameter(names = {"-model", "-m"}, required = true, description = "Amino acid substitution model")
+    @Parameter(names = {"-model", "-m"}, required = true, description = "Amino acid substitution model: dayhoff, jtt, wag or blosum62")
     private String model;
         
     public String getModelID(){
@@ -106,7 +106,7 @@ public class CommandArgs {
         return showHelp;
     }
     
-    @Parameter(names = {"-nosort"}, required = false, description = "Do NOT sort transition probabilities by value, instead by amino acid canonical order")
+    @Parameter(names = {"-nosort"}, required = false, description = "Do NOT sort transition probabilities in descending order, but by amino acid canonical order instead")
     private boolean noSort = false;
     
     public boolean getNoSort(){
