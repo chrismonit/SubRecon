@@ -6,22 +6,32 @@ CITATION
 
 [Please cite Monit, C. and Goldstein, R. A. manuscript in preparation etc ]
 
+INSTALLATION
 
-$ java -jar SubRecon.jar 
-	-sequences <protein_sequence_alignment>
-	-tree <newick_tree_file>
-	-model <substitution_model>
-	-mother <mother_node_label>
-	-daughter <daughter_node_label>
-	[-frequencies <A>,<R>,<N>,...,<Y>]
-	[-site <site_index>]	
-	[-threshold <print_threshold>]
-	[-nosort]
-	[-phy]
-	[-verbose]
-	[-help]
+First clone or download this git repository and then compile using Apache Ant (http://ant.apache.org/).
+
+$ cd SubRecon-master
+$ ant
+$ ls dist/
+SubRecon.jar
 
 OPTIONS
+
+	Summary:
+	$ java -jar SubRecon.jar 
+		-sequences <protein_sequence_alignment>
+		-tree <newick_tree_file>
+		-model <substitution_model>
+		-mother <mother_node_label>
+		-daughter <daughter_node_label>
+		[-frequencies <A>,<R>,<N>,...,<Y>]
+		[-site <site_index>]	
+		[-threshold <print_threshold>]
+		[-nosort]
+		[-phy]
+		[-verbose]
+		[-help]
+
 	Required:
 	-sequences, -s
        		Amino acid sequence alignment 
