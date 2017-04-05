@@ -1,6 +1,6 @@
 SYNOPSIS
 
-SubRecon
+SubRecon: Probabilistic Reconstruction of Ancestral Substitutions
 
 CITATION
 
@@ -103,7 +103,7 @@ CONTROLLING OUTPUT
 
 The default output shows firstly information about the substitution model used and then results for sites analysed.
 
-The results columns show the site index, the marginal site log-likelihood and then a list of substitutions with probabilities above the threshold value, in descending order of probability. A site's results is only printed if at least one non-identical (I != J) substitution has probability above the threshold.
+The results columns show the site index, the marginal site log-likelihood and then a list of substitutions with probabilities above the threshold value, in descending order of probability. A site's results are only printed if at least one non-identical (I != J) substitution has probability above the threshold.
 
 The output can be controlled with the -threshold -nosort and -verbose options.
 
