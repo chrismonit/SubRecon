@@ -79,15 +79,22 @@ public class SubRecon {
         
         this.init(args);
         
-        if (site < 0) { // default site value. User has not specified a site to analyse, so we analyse all of them
+        if (site < 0) { // default site value is -1. User has not specified a site to analyse, so we analyse all of them
+            boolean interestingSite = false;
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
                 
                 SiteResult result = analyseSite(iSite);
                 if (verbose || result.getMaxIIProb() <= 1.-threshold) {
+                    interestingSite = true; // at least one site has result to be printed
                     System.out.println(result);
                 }// else print nothing
-                
-            }
+            }// for
+            
+            if (!interestingSite) { // produce output if no sites are deemed interesting, to avoid confusion
+                System.out.println("0 sites have non-identical substitution probabilities greater than threshold value");
+                System.out.println("Threshold="+threshold);
+                System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
+            }// if
         }else{
             System.out.println(analyseSite(site)); // a single named site is being analysed
         }
