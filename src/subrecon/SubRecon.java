@@ -137,8 +137,8 @@ public class SubRecon {
             throw new RuntimeException("ERROR: -site value is greater than the number of sites in the alignment");
         }
         
-        String alphaLabel = comArgs.getAlphaLabel();
-        String deltaLabel = comArgs.getDeltaLabel();
+        //String alphaLabel = comArgs.getAlphaLabel();
+        //String deltaLabel = comArgs.getDeltaLabel();
         
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
@@ -150,21 +150,9 @@ public class SubRecon {
         if (root.getChildCount() > 2) {
             throw new RuntimeException("ERROR: Tree root unexpectedly has more than two descendents. Is tree rooted correctly?");
         }
-        
-        // assign alpha and delta nodes
-        alpha = delta = null;
-        
-        for (int iChild = 0; iChild < root.getChildCount(); iChild++) {
-            if (root.getChild(iChild).getIdentifier().getName().equals(alphaLabel)) {
-                alpha = root.getChild(iChild);
-            } else if (root.getChild(iChild).getIdentifier().getName().equals(deltaLabel)){
-                delta = root.getChild(iChild);
-            }
-        }
-        
-        if (alpha == null || delta == null) {
-            throw new RuntimeException("ERROR: Failed to recognise mother and daughter nodes. Are they labelled correctly in the tree?");
-        }
+            
+        alpha = root.getChild(0);
+        delta = root.getChild(1);
         
         /* In the teminology used here, alpha node is treated as the root - see diagram
             However, the original root is actually along the branch connecting alpha and delta.
@@ -173,6 +161,7 @@ public class SubRecon {
         */ 
         alphaToDeltaBL = alpha.getBranchLength()+delta.getBranchLength();
 
+        // TODO what if alpha has more than two descendents???
         
         beta = alpha.getChild(0); // desginations of beta and gamma are arbitrary
         gamma = alpha.getChild(1);
