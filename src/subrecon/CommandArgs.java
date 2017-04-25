@@ -76,21 +76,6 @@ public class CommandArgs {
         return pi;
     }
     
-    // node labels
-    @Parameter(names = {"-mother", "-I"}, required = true, description = "Label for node at the beginning of branch of interest")
-    private String alphaLabel = "I";
-    
-    public String getAlphaLabel(){
-        return alphaLabel;
-    }
-    
-    @Parameter(names = {"-daughter", "-J"}, required = true, description = "Label for node at the end of the branch of interest")
-    private String deltaLabel = "J";
-    
-    public String getDeltaLabel(){
-        return deltaLabel;
-    }
-    
     // other options
     @Parameter(names = {"-site"}, required = false, description = "Single alignment column to analyse (analyse all columns by default)")
     private int site;
