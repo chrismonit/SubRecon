@@ -22,8 +22,6 @@ OPTIONS
 		-sequences <protein_sequence_alignment>
 		-tree <newick_tree_file>
 		-model <substitution_model>
-		-mother <mother_node_label>
-		-daughter <daughter_node_label>
 		[-frequencies <A>,<R>,<N>,...,<Y>]
 		[-site <site_index>]	
 		[-threshold <print_threshold>]
@@ -41,12 +39,6 @@ OPTIONS
 		(NB branch lengths should have been estimated in advance with the same model specified here) 
 	-model, -m
        		Amino acid substitution model: dayhoff, jtt, wag or blosum62
-	-mother, -I
-       		Label for node at the beginning of branch of interest
-       		(Default is 'I')
-	-daughter, -J
-       		Label for node at the end of the branch of interest
-       		(Default is 'J')
 	
 	Optional:
 	-frequencies, -pi
@@ -73,7 +65,7 @@ OPTIONS
 USAGE
 
 Simple example:
-	$ java -jar SubRecon.jar -s alignment.fasta -t tree.nwk.tre -m wag -I iNode -J jNode > subrecon.out.txt
+	$ java -jar SubRecon.jar -s alignment.fasta -t tree.nwk.tre -m wag > subrecon.out.txt
 
 Command line arguments can be placed in a file, where a space in the above command is replaced with a newline:
 	$ cat args
@@ -83,10 +75,6 @@ Command line arguments can be placed in a file, where a space in the above comma
 	tree.nwk.tre
 	-m
 	wag
-	-I
-	iNode
-	-J
-	jNode
 
 The program can then be run:
 	$ java -jar SubRecon.jar @args > subrecon.out.txt
@@ -97,17 +85,14 @@ The protein sequence alignment can be accepted in either FASTA (default) or Phyl
 
 The tree must be saved in a file as Newick format and rooted on the branch of interest. 
 
-The direction of substitutions is specified by labeling the two clades descending from the root with the -mother and -daughter flags. 
-
 E.g. consider a tree with four taxa where the branch of interest is that connecting clades (taxon1,taxon2) and (taxon3,taxon4):
 
-((taxon1:0.05,taxon2:0.05)DAUGHTER_LABEL:0.05,(taxon3:0.05,taxon4:0.05)MOTHER_LABEL:0.05);
+((taxon1:0.05,taxon2:0.05):0.05,(taxon3:0.05,taxon4:0.05)L:0.05);
 
 The branch of interest is of length 0.1, but is divided in half by the root node.
 
-The program will compute the probabilities of substitutions from states at the MOTHER node to states at the DAUGHTER node.
+The program will compute the probabilities of substitutions from states at node (taxon1,taxon2) to states at node (taxon3,taxon4) or vise versa (since the applicable substitution models are reversible).
 
-(NB node labels cannot contain characters used elsewhere in a tree string, such as parentheses or colons.)
 
 CONTROLLING OUTPUT
 
@@ -118,6 +103,6 @@ The results columns show the site index, the marginal site log-likelihood and th
 The output can be controlled with the -threshold -nosort and -verbose options.
 
 E.g. 
-	$ java -jar SubRecon.jar -s aln -t tree -m wag -I i -J j -threshold 0.0 -nosort -verbose
+	$ java -jar SubRecon.jar -s aln -t tree -m wag -threshold 0.0 -nosort -verbose
 
 This will print all 20x20=400 substitution probabilities, in canonical amino acid order, for all sites.
