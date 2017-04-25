@@ -114,7 +114,7 @@ public class CommandArgs {
     }
     
     @Parameter(names = {"-threshold"}, required = false, description = "Minimum probability value for a substitution to be displayed ('-threshold 0.0' will print all 400 possibilities)")
-    private double threshold = 1./Math.pow(10., (double)Constants.SIG_DIGITS);
+    private double threshold = 0.01;
         
     public double getThreshold(){
         return threshold;
@@ -127,4 +127,10 @@ public class CommandArgs {
         return verbose;
     }
     
+    @Parameter(names = {"-sd"}, required = false, description = "Number of significant digits to round probabilities when printing")
+    private int sigDigits = 2;
+        
+    public int getSigDigits(){
+        return sigDigits;
+    }
 }

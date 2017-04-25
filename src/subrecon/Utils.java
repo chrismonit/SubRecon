@@ -7,7 +7,7 @@ package subrecon;
 public class Utils {
     
     public static double roundDouble(double toRound, int decPlaces){
-        int tenMultiple = (int)Math.pow(10.0, (double)decPlaces);
+        long tenMultiple = (long)Math.pow(10.0, (double)decPlaces);
         return (double)Math.round( toRound * tenMultiple )  / tenMultiple;
     }
     

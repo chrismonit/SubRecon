@@ -21,6 +21,7 @@ public class SiteResult {
     
     private double maxIIProb; // branchProb[i][j] where i==j
     
+    private int sigDigits;
     
     public int getSite(){
         return site;
@@ -31,7 +32,7 @@ public class SiteResult {
     }
         
     public SiteResult(int site, double marginalLnL, double[][] branchProbs, 
-            double threshold, String delimiter, boolean sortByProb){
+            double threshold, String delimiter, boolean sortByProb, int sigDigits){
         
         // NB deliberately do not assign branchProbs to a field, because it is large and dont want it to persist in memory
         this.site = site;
@@ -43,7 +44,7 @@ public class SiteResult {
         this.aa = AminoAcids.DEFAULT_INSTANCE;
         
         this.maxIIProb = -1.;
-        
+        this.sigDigits = sigDigits;
         // save the reisdue pairs with high probabilities
         // eg V->A, 0.99 etc
         for (int i = 0; i < branchProbs.length; i++) {
@@ -67,8 +68,8 @@ public class SiteResult {
         
     }// constructor
     
-    public SiteResult(int site, double marginalLnL, double[][] branchProbs, double threshold, boolean sortByProb){
-        this(site, marginalLnL, branchProbs, threshold, Constants.DELIM, sortByProb);
+    public SiteResult(int site, double marginalLnL, double[][] branchProbs, double threshold, boolean sortByProb, int sigDigits){
+        this(site, marginalLnL, branchProbs, threshold, Constants.DELIM, sortByProb, sigDigits);
     } // constructor
     
     
@@ -97,12 +98,12 @@ public class SiteResult {
         StringBuilder s = new StringBuilder();
         s.append(site+1); // correct for zero based
         s.append(Constants.DELIM);
-        s.append( Utils.roundDouble(marginalLnL, Constants.SIG_DIGITS) );
+        s.append( Utils.roundDouble(marginalLnL, sigDigits) );
         for (int i = 0; i < aboveThreshProbs.size(); i++) {
             s.append(Constants.DELIM);
             s.append(aboveThreshSubs.get(i));
             s.append(Constants.SUB_PROB_DELIM); 
-            s.append( Utils.roundDouble(aboveThreshProbs.get(i), Constants.SIG_DIGITS));
+            s.append( Utils.roundDouble(aboveThreshProbs.get(i), sigDigits));
         }
 
         return s.toString();

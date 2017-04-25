@@ -66,6 +66,7 @@ public class SubRecon {
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
     private boolean verbose;
+    private int sigDigits;
     
     private CommandArgs comArgs;
     
@@ -126,6 +127,11 @@ public class SubRecon {
         this.sortByProb = !comArgs.getNoSort();
         this.threshold =  comArgs.getThreshold();
         this.verbose = comArgs.getVerbose();
+        this.sigDigits = comArgs.getSigDigits();
+        
+        if (sigDigits < 1 || sigDigits > 15) {
+            throw new RuntimeException("ERROR: -sd (significant digits) argument must be 0 < sd < 16");
+        }
         
         if (site > alignment.getLength()-1) {
             throw new RuntimeException("ERROR: -site value is greater than the number of sites in the alignment");
@@ -319,7 +325,7 @@ public class SubRecon {
             throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal");
         }
         
-        return new SiteResult(site, marginalLL, branchProbs, threshold, sortByProb);
+        return new SiteResult(site, marginalLL, branchProbs, threshold, sortByProb, sigDigits);
         
     } // analyseSites
     
