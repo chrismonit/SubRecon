@@ -20,31 +20,19 @@ import pal.tree.Tree;
  *
  * @author Christopher Monit <c.monit.12@ucl.ac.uk>
  * 
+ * Fig. 1 Representation of tree showing node nomenclature used here. r = root.
+ * The conventional pruning algorithm is used to compute conditional probability 
+ * vectors for clades A and D.
  * 
- * 
- *    r    |------
- |----|----|d
- |         |----- 
- |
- |
- |
- |         |-----
-a|---------|g
- |         |-----
- |
- |
- |
- |         |-----
- |---------|b
-           |-----
-
- * Diagram explaining the nomenclature used for variable names
- * The root of the tree as read in from file is at node r, which is on the branch of interest,
- * connecting alpha and delta nodes. (We choose to ignore this rooting, however, 
- * except for the fact that it tells us where the branch of interest is.)
- * The conventional pruning algorithm is used to compute likelihood vectors for 
- * clades descending from beta, gamma and delta
- * 
+ *       |-----
+ *   |---|D
+ *   |   |-----
+ *   |
+ * r-|
+ *   |
+ *   |   |----
+ *   |---|A
+ *       |----
  * 
  */
 public class SubRecon {
@@ -57,11 +45,9 @@ public class SubRecon {
     private int site;
     
     private Node root;
-    private Node alpha;
-    private Node beta;
-    private Node gamma;
-    private Node delta;
-    private double alphaToDeltaBL;
+    private Node nodeA;
+    private Node nodeD;
+    private double branchLengthAD;
     
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
@@ -82,6 +68,7 @@ public class SubRecon {
         
         if (site < 0) { // default site value is -1. User has not specified a site to analyse, so we analyse all of them
             boolean interestingSite = false;
+            long start = System.currentTimeMillis();
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
                 
                 SiteResult result = analyseSite(iSite);
@@ -90,6 +77,8 @@ public class SubRecon {
                     System.out.println(result);
                 }// else print nothing
             }// for
+            long duration = System.currentTimeMillis() - start;
+            System.out.println("duration: "+duration);
             
             if (!interestingSite) { // produce output if no sites are deemed interesting, to avoid confusion
                 System.out.println("0 sites have non-identical substitution probabilities greater than threshold value");
@@ -137,9 +126,6 @@ public class SubRecon {
             throw new RuntimeException("ERROR: -site value is greater than the number of sites in the alignment");
         }
         
-        //String alphaLabel = comArgs.getAlphaLabel();
-        //String deltaLabel = comArgs.getDeltaLabel();
-        
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
 
@@ -151,20 +137,15 @@ public class SubRecon {
             throw new RuntimeException("ERROR: Tree root unexpectedly has more than two descendents. Is tree rooted correctly?");
         }
             
-        alpha = root.getChild(0);
-        delta = root.getChild(1);
+        nodeA = root.getChild(0);
+        nodeD = root.getChild(1);
         
-        /* In the teminology used here, alpha node is treated as the root - see diagram
-            However, the original root is actually along the branch connecting alpha and delta.
-            Therefore the length of the branch connecting alpha and delta is the sum 
+        /* 
+            The original root is along the branch connecting A and D.
+            Therefore the length of the branch connecting A and D is the sum 
             of the two branches descending from the original root.
         */ 
-        alphaToDeltaBL = alpha.getBranchLength()+delta.getBranchLength();
-
-        // TODO what if alpha has more than two descendents???
-        
-        beta = alpha.getChild(0); // desginations of beta and gamma are arbitrary
-        gamma = alpha.getChild(1);
+        branchLengthAD = nodeA.getBranchLength() + nodeD.getBranchLength();
         
         try{
             PrintWriter writer = new PrintWriter(System.out);
@@ -223,15 +204,13 @@ public class SubRecon {
 
         // compute conditional lnls
         
-        Count betaScalingCount = new Count();
-        Count gammaScalingCount = new Count();
+        Count alphaScalingCount = new Count();
         Count deltaScalingCount = new Count();
         Count marginalScalingCount = new Count();
 
         // these have not been corrected for scaling
-        double[] betaConditionals = downTreeMarginal(beta, site, betaScalingCount);
-        double[] gammaConditionals = downTreeMarginal(gamma, site, gammaScalingCount);
-        double[] deltaConditionals = downTreeMarginal(delta, site, deltaScalingCount);
+        double[] alphaConditionals = downTreeMarginal(nodeA, site, alphaScalingCount);
+        double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount);
 
         // compute marginal lnl
         
@@ -244,50 +223,18 @@ public class SubRecon {
         
         double sumConditionalL = 0.0; // for sanity check
         
-        double scalingCorrection = betaScalingCount.get() + gammaScalingCount.get() + deltaScalingCount.get();
+        double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get();
         
-        // TODO this is much more efficient for speed, at the expense of more memory use
-        // can we reduce memory use somehow?
-        double[][] alphaDeltaProbs = new double[pi.length][pi.length];
-        double[][] alphaBetaProbs = new double[pi.length][pi.length];
-        double[][] alphaGammaProbs = new double[pi.length][pi.length];
-        
-        model.setDistance(alphaToDeltaBL);
-        model.getTransitionProbabilities(alphaDeltaProbs);
-        
-        model.setDistance(beta.getBranchLength());
-        model.getTransitionProbabilities(alphaBetaProbs);
-        
-        model.setDistance(gamma.getBranchLength());
-        model.getTransitionProbabilities(alphaGammaProbs);
-        
+        model.setDistance(branchLengthAD);
         // Conditional Likelihoods
          
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
             
-            double alphaOnlyTerm = pi[iAlpha];
+            double alphaTerms = pi[iAlpha] * alphaConditionals[iAlpha];
             
             for (int iDelta = 0; iDelta < pi.length; iDelta++) {
                 
-                double scaledConditionalL = 0.0; // conditional L of iAlpha->iDelta transition along branch connecting nodes alpha and delta
-                
-                 // alpha -> delta
-                double alphaDeltaTerm = alphaDeltaProbs[iAlpha][iDelta] * deltaConditionals[iDelta];
-                
-                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
-                               
-                    // alpha -> beta
-                    double alphaBetaTerm = alphaBetaProbs[iAlpha][iBeta] * betaConditionals[iBeta];
-                    
-                    for (int iGamma = 0; iGamma < pi.length; iGamma++) {
-
-                        // alpha -> gamma
-                        double alphaGammaTerm = alphaGammaProbs[iAlpha][iGamma] * gammaConditionals[iGamma];
-                                                
-                        scaledConditionalL += alphaOnlyTerm * alphaDeltaTerm * alphaBetaTerm * alphaGammaTerm;
-                        
-                    }// iGamma
-                }// iBeta
+                double scaledConditionalL = alphaTerms * model.getTransitionProbability(iAlpha, iDelta) * deltaConditionals[iDelta];
                 
                 double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection;
                 branchProbs[iAlpha][iDelta] = Math.exp(conditionalLL - marginalLL);
