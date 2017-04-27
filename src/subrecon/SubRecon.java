@@ -68,7 +68,7 @@ public class SubRecon {
         
         if (site < 0) { // default site value is -1. User has not specified a site to analyse, so we analyse all of them
             boolean interestingSite = false;
-            long start = System.currentTimeMillis();
+            //long start = System.currentTimeMillis();
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
                 
                 SiteResult result = analyseSite(iSite);
@@ -77,8 +77,8 @@ public class SubRecon {
                     System.out.println(result);
                 }// else print nothing
             }// for
-            long duration = System.currentTimeMillis() - start;
-            System.out.println("duration: "+duration);
+            //long duration = System.currentTimeMillis() - start;
+            //System.out.println("duration: "+duration);
             
             if (!interestingSite) { // produce output if no sites are deemed interesting, to avoid confusion
                 System.out.println("0 sites have non-identical substitution probabilities greater than threshold value");
@@ -226,7 +226,6 @@ public class SubRecon {
         double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get();
         
         model.setDistance(branchLengthAD);
-        // Conditional Likelihoods
          
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
             
