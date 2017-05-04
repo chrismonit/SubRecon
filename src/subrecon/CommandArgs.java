@@ -39,7 +39,21 @@ public class CommandArgs {
     public String getModelID(){
         return model;
     }
-
+    
+    
+    @Parameter(names = {"-alpha", "-a"}, required = true, description = "Shape parameter for gamma distribution of substitution rates")
+    private double alpha = 0.0;
+        
+    public double getAlpha(){
+        return alpha;
+    }
+    
+    @Parameter(names = {"-numbercategories", "-n"}, required = true, description = "Number of rate catergories for gamma distribution of substitution rates")
+    private int nCat = 1;
+        
+    public double getNCat(){
+        return nCat;
+    }
 
     // we assume in most cases the user will want to provide their own frequencies
     @Parameter(names = {"-frequencies", "-pi"}, required = false, description = "Equilibrium frequencies for amino acids, delimited by comma in order: A,R,N,D,C,Q,E,G,H,I,L,K,M,F,P,S,T,W,Y,V. (Use model's original estimated frequencies by default)")

@@ -133,7 +133,7 @@ public class SubRecon {
             
             if (site < -1 || site > alignment.getLength()-1) // site == -1 is the default number, meaning no value has been supplied. site < -1 means the user has given a (nonsensical) negative number
                 throw new ParameterException("ERROR: -site value is less than 1 or greater than the number of sites in the alignment");
-            
+           
             if (root.getChildCount() > 2) 
                 throw new ParameterException("ERROR: Tree root has more than two descendents. Is the tree rooted correctly?");
         
