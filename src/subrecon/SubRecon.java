@@ -107,11 +107,12 @@ public class SubRecon {
             jcom.parse(args);
         }
         catch(ParameterException ex){
-            System.out.println(ex.getMessage());
+            System.out.println("ERROR: " + ex.getMessage());
+            helpAndExit(jcom, 1);
         }
         
         if (comArgs.getShowHelp()) {
-            helpAndExit(jcom);
+            helpAndExit(jcom, 0);
         }
         
         this.site = comArgs.getSite(); // default value is -1, meaning analyse all sites
@@ -123,23 +124,22 @@ public class SubRecon {
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
         
-        root = this.tree.getRoot();
-        
         try{ // check input parameters are ok
             loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
-
+            root = this.tree.getRoot();
+            
             if (sigDigits < 1 || sigDigits > 15) 
                 throw new ParameterException("ERROR: -sd (significant digits) argument must be 0 < sd < 16");
             
-            if (site > alignment.getLength()-1) 
-                throw new ParameterException("ERROR: -site value is greater than the number of sites in the alignment");
+            if (site < -1 || site > alignment.getLength()-1) // site == -1 is the default number, meaning no value has been supplied. site < -1 means the user has given a (nonsensical) negative number
+                throw new ParameterException("ERROR: -site value is less than 1 or greater than the number of sites in the alignment");
             
             if (root.getChildCount() > 2) 
-                throw new ParameterException("ERROR: Tree root unexpectedly has more than two descendents. Is the tree rooted correctly?");
+                throw new ParameterException("ERROR: Tree root has more than two descendents. Is the tree rooted correctly?");
         
         }catch (ParameterException e){
             System.out.println(e.getMessage());
-            helpAndExit(jcom);
+            helpAndExit(jcom, 1);
         }
         
         nodeA = root.getChild(0);
@@ -199,12 +199,12 @@ public class SubRecon {
         return model;
     }
     
-    private void helpAndExit(JCommander jcom){
+    private void helpAndExit(JCommander jcom, int exitStatus){
         
         HelpHandler handler = new HelpHandler();
         handler.printSynopsis();
         handler.printOptions(jcom);
-        System.exit(0);
+        System.exit(exitStatus);
     }
 
     
@@ -358,16 +358,20 @@ public class SubRecon {
             this.tree = new ReadTree(treePath);
         }
         catch(TreeParseException e){
-            throw new ParameterException("ERROR: Unable to parse tree file");
+            throw new ParameterException("ERROR: Unable to parse tree file: "+e.getMessage());
         }
         catch(AlignmentParseException e){
-            throw new ParameterException("ERROR: Unable to parse alignment file");
+            throw new ParameterException("ERROR: Unable to parse alignment file: "+e.getMessage());
         }
         catch(FileNotFoundException e){
-            throw new ParameterException("ERROR: Unable to find alignment or tree file(s)");
+            throw new ParameterException("ERROR: Unable to find alignment or tree file(s): "+e.getMessage());
         }
         catch(IOException e){
-            throw new ParameterException("ERROR: Unable read tree or alignment file(s)");
+            throw new ParameterException("ERROR: Unable read tree or alignment file(s): "+e.getMessage());
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            throw new ParameterException("ERROR: Problem reading alignment or tree");
         }
 
     }//loadData
