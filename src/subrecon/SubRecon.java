@@ -53,6 +53,9 @@ public class SubRecon {
     private Node nodeD;
     private double branchLengthAD;
     
+    private double shape; // shape parameter for gamma dist (alpha)
+    private int nCat; // rate categories for gamma dist
+    
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
     private boolean verbose;
@@ -121,6 +124,9 @@ public class SubRecon {
         this.verbose = comArgs.getVerbose();
         this.sigDigits = comArgs.getSigDigits();
         
+        this.shape = comArgs.getShape();
+        this.nCat = comArgs.getNCat();
+        
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
         
@@ -134,6 +140,12 @@ public class SubRecon {
             if (site < -1 || site > alignment.getLength()-1) // site == -1 is the default number, meaning no value has been supplied. site < -1 means the user has given a (nonsensical) negative number
                 throw new ParameterException("ERROR: -site value is less than 1 or greater than the number of sites in the alignment");
            
+            if (shape < 0.0)
+                throw new ParameterException("ERROR: -shape value must be greater than or equal to 0.0");
+            
+            if (nCat < 1)
+                throw new ParameterException("ERROR: -n (number of rate categories) must be 1 or higher");
+            
             if (root.getChildCount() > 2) 
                 throw new ParameterException("ERROR: Tree root has more than two descendents. Is the tree rooted correctly?");
         

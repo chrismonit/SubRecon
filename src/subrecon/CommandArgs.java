@@ -51,7 +51,7 @@ public class CommandArgs {
     @Parameter(names = {"-numbercategories", "-n"}, required = true, description = "Number of rate catergories for gamma distribution of substitution rates")
     private int nCat = 1;
         
-    public double getNCat(){
+    public int getNCat(){
         return nCat;
     }
 
