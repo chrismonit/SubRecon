@@ -41,11 +41,11 @@ public class CommandArgs {
     }
     
     
-    @Parameter(names = {"-alpha", "-a"}, required = true, description = "Shape parameter for gamma distribution of substitution rates")
-    private double alpha = 0.0;
+    @Parameter(names = {"-shape", "-a"}, required = true, description = "Shape parameter (alpha) for gamma distribution of substitution rates")
+    private double shape = 0.0;
         
-    public double getAlpha(){
-        return alpha;
+    public double getShape(){
+        return shape;
     }
     
     @Parameter(names = {"-numbercategories", "-n"}, required = true, description = "Number of rate catergories for gamma distribution of substitution rates")
