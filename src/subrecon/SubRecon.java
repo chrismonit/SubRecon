@@ -2,8 +2,11 @@ package subrecon;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
+import pal.alignment.AlignmentParseException;
 import pal.alignment.AlignmentReaders;
 import pal.alignment.SimpleAlignment;
 import pal.datatype.AminoAcids;
@@ -15,6 +18,7 @@ import pal.substmodel.WAG;
 import pal.tree.Node;
 import pal.tree.ReadTree;
 import pal.tree.Tree;
+import pal.tree.TreeParseException;
 
 /**
  *
@@ -337,7 +341,7 @@ public class SubRecon {
     }// downTreeConditional
     
 
-    public void loadData(String alignmentPath, String treePath, Boolean readPhylip){
+    public void loadData(String alignmentPath, String treePath, Boolean readPhylip) throws ParameterException {
         try{
             SimpleAlignment simple;
             if (readPhylip)
@@ -349,9 +353,17 @@ public class SubRecon {
                                 
             this.tree = new ReadTree(treePath);
         }
-        catch(Exception e){
-            System.out.println("ERROR: Unable to load alignment or tree file(s)");
-            System.exit(1);
+        catch(TreeParseException e){
+            throw new ParameterException("ERROR: Unable to parse tree file");
+        }
+        catch(AlignmentParseException e){
+            throw new ParameterException("ERROR: Unable to parse alignment file");
+        }
+        catch(FileNotFoundException e){
+            throw new ParameterException("ERROR: Unable to find alignment or tree file(s)");
+        }
+        catch(IOException e){
+            throw new ParameterException("ERROR: Unable read tree or alignment file(s)");
         }
 
     }//loadData
