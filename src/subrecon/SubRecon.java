@@ -114,33 +114,34 @@ public class SubRecon {
             helpAndExit(jcom);
         }
         
-        loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
-        
         this.site = comArgs.getSite(); // default value is -1, meaning analyse all sites
         this.sortByProb = !comArgs.getNoSort();
         this.threshold =  comArgs.getThreshold();
         this.verbose = comArgs.getVerbose();
         this.sigDigits = comArgs.getSigDigits();
         
-        if (sigDigits < 1 || sigDigits > 15) {
-            throw new RuntimeException("ERROR: -sd (significant digits) argument must be 0 < sd < 16");
-        }
-        
-        if (site > alignment.getLength()-1) {
-            throw new RuntimeException("ERROR: -site value is greater than the number of sites in the alignment");
-        }
-        
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
-
-        // --- initialising tree and nodes etc ---
         
         root = this.tree.getRoot();
         
-        if (root.getChildCount() > 2) {
-            throw new RuntimeException("ERROR: Tree root unexpectedly has more than two descendents. Is tree rooted correctly?");
-        }
+        try{ // check input parameters are ok
+            loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
+
+            if (sigDigits < 1 || sigDigits > 15) 
+                throw new ParameterException("ERROR: -sd (significant digits) argument must be 0 < sd < 16");
             
+            if (site > alignment.getLength()-1) 
+                throw new ParameterException("ERROR: -site value is greater than the number of sites in the alignment");
+            
+            if (root.getChildCount() > 2) 
+                throw new ParameterException("ERROR: Tree root unexpectedly has more than two descendents. Is the tree rooted correctly?");
+        
+        }catch (ParameterException e){
+            System.out.println(e.getMessage());
+            helpAndExit(jcom);
+        }
+        
         nodeA = root.getChild(0);
         nodeD = root.getChild(1);
         
@@ -155,7 +156,10 @@ public class SubRecon {
             PrintWriter writer = new PrintWriter(System.out);
             model.report(writer);
             writer.flush();
-        }catch(Exception e){}
+        }catch(Exception e){
+            e.printStackTrace();
+            System.exit(1);
+        }
         
     } // init
     
