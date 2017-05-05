@@ -13,6 +13,7 @@ import pal.datatype.AminoAcids;
 import pal.substmodel.AminoAcidModel;
 import pal.substmodel.BLOSUM62;
 import pal.substmodel.Dayhoff;
+import pal.substmodel.GammaRates;
 import pal.substmodel.JTT;
 import pal.substmodel.WAG;
 import pal.tree.Node;
@@ -60,6 +61,8 @@ public class SubRecon {
     private double threshold; // minimum transition probability for printing 
     private boolean verbose;
     private int sigDigits;
+    
+    private GammaRates gRates;
     
     private CommandArgs comArgs;
     
@@ -127,6 +130,7 @@ public class SubRecon {
         this.shape = comArgs.getShape();
         this.nCat = comArgs.getNCat();
         
+        // TODO this should be moved to try block, should throw exception if model identifier makes no sense
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
         
@@ -154,7 +158,7 @@ public class SubRecon {
             helpAndExit(jcom, 1);
         }
         
-        nodeA = root.getChild(0);
+        nodeA = root.getChild(0);  
         nodeD = root.getChild(1);
         
         /* 
@@ -164,9 +168,12 @@ public class SubRecon {
         */ 
         branchLengthAD = nodeA.getBranchLength() + nodeD.getBranchLength();
         
+        gRates = new GammaRates(nCat, shape);        
+        
         try{
             PrintWriter writer = new PrintWriter(System.out);
             model.report(writer);
+            gRates.report(writer);
             writer.flush();
         }catch(Exception e){
             e.printStackTrace();
@@ -178,7 +185,7 @@ public class SubRecon {
     
     
     
-    
+    // TODO should throw parameter exception
     private AminoAcidModel assignModel(String modelID, double[] frequencies){
     
         AminoAcidModel model;
@@ -221,7 +228,7 @@ public class SubRecon {
 
     
     public SiteResult analyseSite(int site){
-
+                
         // compute conditional lnls
         
         Count alphaScalingCount = new Count();
