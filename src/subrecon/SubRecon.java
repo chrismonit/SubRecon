@@ -179,6 +179,7 @@ public class SubRecon {
             e.printStackTrace();
             System.exit(1);
         }
+        System.out.println("");
         
     } // init
     
@@ -228,65 +229,76 @@ public class SubRecon {
 
     
     public SiteResult analyseSite(int site){
-                
-        // compute conditional lnls
         
-        Count alphaScalingCount = new Count();
-        Count deltaScalingCount = new Count();
-        Count marginalScalingCount = new Count();
-
-        // these have not been corrected for scaling
-        double[] alphaConditionals = downTreeMarginal(nodeA, site, alphaScalingCount);
-        double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount);
-
-        // compute marginal lnl
+        double[][] branchProbs = new double[pi.length][pi.length]; // stores the 400 posterior probs for branch of interest
+        double siteMarginalL = 0.0; // this is summing over rate classes
+        double invNCat = 1./nCat;
         
-        double scaledMarginalL = computeTotalL(site, marginalScalingCount); // not corrected for scaling
-        double scaledMarginalLL = Math.log(scaledMarginalL);
-        double marginalLL = scaledMarginalLL + marginalScalingCount.get(); // correcting for scaling
-        double marginalL = Math.exp(marginalLL); // used in sanity checks below
-        
-        double[][] branchProbs = new double[pi.length][pi.length]; // stores the 400 transition probs for branch of interest
-        
-        double sumConditionalL = 0.0; // for sanity check
-        
-        double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get();
-        
-        model.setDistance(branchLengthAD);
-         
-        for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
+        for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
+            double rate = gRates.getRate(iRate);        
             
-            double alphaTerms = pi[iAlpha] * alphaConditionals[iAlpha];
+            // compute conditional lnls
+
+            Count alphaScalingCount = new Count();
+            Count deltaScalingCount = new Count();
+
+            // these have not been corrected for scaling
+            double[] alphaConditionals = downTreeMarginal(nodeA, site, alphaScalingCount, rate);
+            double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount, rate);
+
+            // compute marginal lnl (conditional on rate but not conditional on alpha or delta)
+            Count marginalScalingCount = new Count();
+            double scaledMarginalL = computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)); // not corrected for scaling
+            double scaledMarginalLL = Math.log(scaledMarginalL);
+
+            double marginalLL = scaledMarginalLL + marginalScalingCount.get(); // correcting for scaling
+            double marginalL = Math.exp(marginalLL); // used in sanity checks below
+            siteMarginalL += marginalL;
             
-            for (int iDelta = 0; iDelta < pi.length; iDelta++) {
-                
-                double scaledConditionalL = alphaTerms * model.getTransitionProbability(iAlpha, iDelta) * deltaConditionals[iDelta];
-                
-                double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection;
-                branchProbs[iAlpha][iDelta] = Math.exp(conditionalLL - marginalLL);
-                sumConditionalL += Math.exp(conditionalLL); // for sanity checks
-            }// iDelta
-        }// iAlpha
-        
-        
-        // --- sanity checks ----
-        double probSum = 0.0;
-        for (int i = 0; i < branchProbs.length; i++) {
-            for (int j = 0; j < branchProbs[0].length; j++) {
-                probSum += branchProbs[i][j];
+            double sumConditionalL = 0.0; // for sanity check
+
+            double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get();
+
+            model.setDistance(branchLengthAD * rate);
+
+            double sumBranchProb = 0.0; // for sanity check. Sum over alpha and delta for this rate class should be 1.0
+            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
+
+                double alphaTerms = pi[iAlpha] * alphaConditionals[iAlpha];
+
+                for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+
+                    double scaledConditionalL = alphaTerms * model.getTransitionProbability(iAlpha, iDelta) * deltaConditionals[iDelta];
+
+                    double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection;
+                    double branchProb = Math.exp(conditionalLL - marginalLL); // for this given rate class
+                    branchProbs[iAlpha][iDelta] += branchProb; // sum for each of the rate classes
+                    sumBranchProb += branchProb; // for sanity check
+                    sumConditionalL += Math.exp(conditionalLL); // for sanity checks
+                }// iDelta
+            }// iAlpha
+
+            // --- sanity checks ----
+            // Sum over alpha and delta for this rate class should be 1.0
+            if ( sumBranchProb < 1.0-Constants.EPSILON || sumBranchProb > 1.0+Constants.EPSILON )
+                throw new RuntimeException("ERROR: Branch transition probabilities do not sum to 1.0. Instead: "+sumBranchProb+"; rateclass="+iRate);
+            
+            if (sumConditionalL < marginalL-Constants.EPSILON || sumConditionalL > marginalL+Constants.EPSILON)
+                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. Corrected marginalL="+marginalL+"; sum="+sumConditionalL+"; rateclass="+iRate);
+            // -----------------
+            
+            
+            // because we marginalise over rate classes, we need to divide by prob of each class. These are all 1/nCat (uniform prob)
+            for (int iAlpha = 0; iAlpha < 10; iAlpha++) {
+                for (int iDelta = 0; iDelta < 10; iDelta++) {
+                    branchProbs[iAlpha][iDelta] *= invNCat;
+                }
             }
-        }        
+            
+        } // for iRate
         
-        if ( probSum < 1.0-Constants.EPSILON || probSum > 1.0+Constants.EPSILON ) {
-            throw new RuntimeException("ERROR: Branch transition probabilities do not sum to 1.0. Instead: "+probSum);
-        }
-        
-        if (sumConditionalL < marginalL-Constants.EPSILON || sumConditionalL > marginalL+Constants.EPSILON) {
-            System.out.println("corrected marginalL "+marginalL);
-            System.out.println("sum "+sumConditionalL);
-            throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal");
-        }
-        
+        double marginalLL = Math.log(invNCat * siteMarginalL); // marginal over alpha, delta and rate classes
+            
         return new SiteResult(site, marginalLL, branchProbs, threshold, sortByProb, sigDigits);
         
     } // analyseSites
@@ -294,9 +306,9 @@ public class SubRecon {
 
     
     // normal pruning algorithm
-    private double computeTotalL(int site, Count scalingCorrection){
+    private double computeTotalL(int site, Count scalingCorrection, double rate){
         double sum = 0.0;
-        double[] rootConditionals = downTreeMarginal( tree.getRoot(), site, scalingCorrection);
+        double[] rootConditionals = downTreeMarginal( tree.getRoot(), site, scalingCorrection, rate);
 
         for (int iRootState = 0; iRootState < pi.length; iRootState++) {
             sum +=  pi[iRootState] * rootConditionals[iRootState];
@@ -305,7 +317,7 @@ public class SubRecon {
     }
     
     // part of normal pruning algorithm
-    private double[] downTreeMarginal(Node parent, int site, Count scalingCorrection){
+    private double[] downTreeMarginal(Node parent, int site, Count scalingCorrection, double rate){
         double[] parentConditionals = new double[pi.length];
 
         if (parent.isLeaf()){ // 'parent' is terminal node, i.e. has no children. Code here is no different from normal pruning algorithm
@@ -330,10 +342,10 @@ public class SubRecon {
                 Node child = parent.getChild(iChild);
 
                 double[][] P = new double[pi.length][pi.length];
-                this.model.setDistance(child.getBranchLength());
+                this.model.setDistance(child.getBranchLength() * rate);
                 this.model.getTransitionProbabilities(P);
 
-                double[] childConditionals = downTreeMarginal( parent.getChild(iChild), site, scalingCorrection);
+                double[] childConditionals = downTreeMarginal( parent.getChild(iChild), site, scalingCorrection, rate);
 
                 for (int iParentState = 0; iParentState < pi.length; iParentState++){ // same as normal pruning algorithm
                     double sum = 0.0; //prob of observing data below this node, if the state at this node were iParentState
