@@ -56,6 +56,7 @@ public class SubRecon {
     
     private double shape; // shape parameter for gamma dist (alpha)
     private int nCat; // rate categories for gamma dist
+    double invNCat;
     
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
@@ -129,6 +130,7 @@ public class SubRecon {
         
         this.shape = comArgs.getShape();
         this.nCat = comArgs.getNCat();
+        this.invNCat = 1./(double)nCat;
         
         // TODO this should be moved to try block, should throw exception if model identifier makes no sense
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
@@ -232,7 +234,6 @@ public class SubRecon {
         
         double[][] branchProbs = new double[pi.length][pi.length]; // stores the 400 posterior probs for branch of interest
         double siteMarginalL = 0.0; // this is summing over rate classes
-        double invNCat = 1./nCat;
         
         for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
             double rate = gRates.getRate(iRate);        
@@ -255,7 +256,7 @@ public class SubRecon {
             double marginalL = Math.exp(marginalLL); // used in sanity checks below
             siteMarginalL += marginalL;
             
-            double sumConditionalL = 0.0; // for sanity check
+            double sumConditionalL = 0.0; // for sanity check. Should sum to marginalL
 
             double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get();
 
@@ -297,11 +298,11 @@ public class SubRecon {
             
         } // for iRate
         
-        double marginalLL = Math.log(invNCat * siteMarginalL); // marginal over alpha, delta and rate classes
+        double siteMarginalLL = Math.log(invNCat * siteMarginalL); // marginal over alpha, delta and rate classes
             
-        return new SiteResult(site, marginalLL, branchProbs, threshold, sortByProb, sigDigits);
+        return new SiteResult(site, siteMarginalLL, branchProbs, threshold, sortByProb, sigDigits);
         
-    } // analyseSites
+    } // analyseSite
     
 
     
