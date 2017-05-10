@@ -41,6 +41,7 @@ import pal.tree.TreeParseException;
  * 
  */
 public class SubRecon {
+    private boolean sanityCheck = true;
     private AdvancedAlignmentAminoAcid alignment;
     private Tree tree;
     
@@ -232,37 +233,23 @@ public class SubRecon {
     
     public SiteResult analyseSite(int site){
         
-        double[][] branchProbs = new double[pi.length][pi.length]; // stores the 400 posterior probs for branch of interest
-        double siteMarginalL = 0.0; // this is summing over rate classes
+        double[][] jointStateProbs = new double[pi.length][pi.length]; // stores the 400 posterior probs for branch of interest. Each entry will be a sum over rate classes
+        double sumJointStateProbs = 0.0; // will equal the total likelihood for this site, not conditional on states or rate class
         
         for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
             double rate = gRates.getRate(iRate);        
             
             // compute conditional lnls
-
             Count alphaScalingCount = new Count();
             Count deltaScalingCount = new Count();
-
-            // these have not been corrected for scaling
+            // these have not yet been corrected for scaling:
             double[] alphaConditionals = downTreeMarginal(nodeA, site, alphaScalingCount, rate);
-            double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount, rate);
-
-            // compute marginal lnl (conditional on rate but not conditional on alpha or delta)
-            Count marginalScalingCount = new Count();
-            double scaledMarginalL = computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)); // not corrected for scaling
-            double scaledMarginalLL = Math.log(scaledMarginalL);
-
-            double marginalLL = scaledMarginalLL + marginalScalingCount.get(); // correcting for scaling
-            double marginalL = Math.exp(marginalLL); // used in sanity checks below
-            siteMarginalL += marginalL;
+            double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount, rate);            
             
-            double sumConditionalL = 0.0; // for sanity check. Should sum to marginalL
-
-            double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get();
+            double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get(); //NB this is a logged value
 
             model.setDistance(branchLengthAD * rate);
 
-            double sumBranchProb = 0.0; // for sanity check. Sum over alpha and delta for this rate class should be 1.0
             for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
 
                 double alphaTerms = pi[iAlpha] * alphaConditionals[iAlpha];
@@ -271,42 +258,55 @@ public class SubRecon {
 
                     double scaledConditionalL = alphaTerms * model.getTransitionProbability(iAlpha, iDelta) * deltaConditionals[iDelta];
 
-                    double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection;
-                    double branchProb = Math.exp(conditionalLL - marginalLL); // for this given rate class
-                    branchProbs[iAlpha][iDelta] += branchProb; // sum for each of the rate classes
-                    sumBranchProb += branchProb; // for sanity check
-                    sumConditionalL += Math.exp(conditionalLL); // for sanity checks
+                    double conditionalL = Math.exp(Math.log(scaledConditionalL) + scalingCorrection); // likelihood conditional on iAlpha, iDelta and the rate class, corrected for scaling
+                    jointStateProbs[iAlpha][iDelta] += conditionalL; // contribution from this rate class
+                    sumJointStateProbs += conditionalL;
                 }// iDelta
             }// iAlpha
-
-            // --- sanity checks ----
-            // Sum over alpha and delta for this rate class should be 1.0
-            if ( sumBranchProb < 1.0-Constants.EPSILON || sumBranchProb > 1.0+Constants.EPSILON )
-                throw new RuntimeException("ERROR: Branch transition probabilities do not sum to 1.0. Instead: "+sumBranchProb+"; rateclass="+iRate);
-            
-            if (sumConditionalL < marginalL-Constants.EPSILON || sumConditionalL > marginalL+Constants.EPSILON)
-                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. Corrected marginalL="+marginalL+"; sum="+sumConditionalL+"; rateclass="+iRate);
-            // -----------------
-            
-            
-            // because we marginalise over rate classes, we need to divide by prob of each class. These are all 1/nCat (uniform prob)
-            for (int iAlpha = 0; iAlpha < 10; iAlpha++) {
-                for (int iDelta = 0; iDelta < 10; iDelta++) {
-                    branchProbs[iAlpha][iDelta] *= invNCat;
-                }
-            }
             
         } // for iRate
         
-        double siteMarginalLL = Math.log(invNCat * siteMarginalL); // marginal over alpha, delta and rate classes
+        // normalise
+        double invSumBranchProbs = 1./sumJointStateProbs;
+        for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
+            for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+                jointStateProbs[iAlpha][iDelta] *= invSumBranchProbs;
+            }
+        }
+                
+        if (sanityCheck) {
+            // 1) check sum of conditional probs equals marginal
+            // NB the marginal and sumBranchProbs both should include multiplier 1/nCat (prob of rate class), but these cancel since we take the ratio
+            double sumMarginalL = 0.0; // sum over rate classes. Called marginal because marginalises over iAlpha and iDelta states
+            for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
+                Count marginalScalingCount = new Count();
+                double scaledMarginalLL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
+                double marginalL = Math.exp( scaledMarginalLL + marginalScalingCount.get() ); // correcting for scaling
+                sumMarginalL += marginalL;            
+            }// iRate
+           
+            if (sumJointStateProbs < sumMarginalL-Constants.EPSILON || sumJointStateProbs > sumMarginalL+Constants.EPSILON)
+                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. sumMarginalL="+sumMarginalL+"; sumJointStateProbs="+sumJointStateProbs);
+            // 2) having been normalised, check probs sum to 1
+            double sum = 0.0;
+            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
+                for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+                    sum += jointStateProbs[iAlpha][iDelta];
+                }
+            }
+            if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
+                throw new RuntimeException("ERROR: Sum of posterior probs != 1.0. sum="+sum);
             
-        return new SiteResult(site, siteMarginalLL, branchProbs, threshold, sortByProb, sigDigits);
+        }// sanityCheck
         
+        // invNCat term cancels in when computing jointStateProbs, but must include here
+        double siteMarginalLL = Math.log(invNCat * sumJointStateProbs); // marginal over alpha, delta and rate classes (ie total likelihood)
+        return new SiteResult(site, siteMarginalLL, jointStateProbs, threshold, sortByProb, sigDigits);
     } // analyseSite
     
 
     
-    // normal pruning algorithm
+    // normal pruning algorithm. Used for computing marginalL in sanity check
     private double computeTotalL(int site, Count scalingCorrection, double rate){
         double sum = 0.0;
         double[] rootConditionals = downTreeMarginal( tree.getRoot(), site, scalingCorrection, rate);
