@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import pal.alignment.AlignmentParseException;
 import pal.alignment.AlignmentReaders;
 import pal.alignment.SimpleAlignment;
@@ -246,8 +247,13 @@ public class SubRecon {
             double[] alphaConditionals = downTreeMarginal(nodeA, site, alphaScalingCount, rate);
             double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount, rate);            
             
+            System.out.println("alpha");
+            System.out.println(Arrays.toString(alphaConditionals));
+            System.out.println("delta");
+            System.out.println(Arrays.toString(alphaConditionals));
+            
             double scalingCorrection = alphaScalingCount.get() + deltaScalingCount.get(); //NB this is a logged value
-
+            System.out.println("scalingCorrection "+scalingCorrection);
             model.setDistance(branchLengthAD * rate);
 
             for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
@@ -255,10 +261,13 @@ public class SubRecon {
                 double alphaTerms = pi[iAlpha] * alphaConditionals[iAlpha];
 
                 for (int iDelta = 0; iDelta < pi.length; iDelta++) {
-
+                    
+                    // NB could do this multiplication in log space too
                     double scaledConditionalL = alphaTerms * model.getTransitionProbability(iAlpha, iDelta) * deltaConditionals[iDelta];
-
-                    double conditionalL = Math.exp(Math.log(scaledConditionalL) + scalingCorrection); // likelihood conditional on iAlpha, iDelta and the rate class, corrected for scaling
+                    System.out.println("scL "+scaledConditionalL);
+                    double conditionalLL = Math.log(scaledConditionalL) + scalingCorrection; // PROBLEM. if scaled loglikelihood is high magnitude negative number, taking exp below will give zero
+                    double conditionalL = Math.exp(conditionalLL); // likelihood conditional on iAlpha, iDelta and the rate class, corrected for scaling
+                    System.out.println("conditionalLL "+conditionalLL + " conditionalL "+conditionalL);
                     jointStateProbs[iAlpha][iDelta] += conditionalL; // contribution from this rate class
                     sumJointStateProbs += conditionalL;
                 }// iDelta
@@ -268,6 +277,9 @@ public class SubRecon {
         
         // normalise
         double invSumBranchProbs = 1./sumJointStateProbs;
+        System.out.println("1/sum="+invSumBranchProbs);
+        
+        System.out.println("sum="+sumJointStateProbs);
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
             for (int iDelta = 0; iDelta < pi.length; iDelta++) {
                 jointStateProbs[iAlpha][iDelta] *= invSumBranchProbs;
@@ -305,6 +317,84 @@ public class SubRecon {
     } // analyseSite
     
 
+    
+    private double getLogSumComponents(double[] mixLogLikelihoods){
+        /* // Allows you to values which have been log-transformed
+           mixLogLikelihoods == { ln(a), ln(b), ln(c), ln(d) }; // NB order doesn't matter, nor does number of entries. 
+           ln(a+b+c+d) // where a is the largest
+           = ln( a(1 + b/a + c/a + d/a) )
+           = ln(a) + ln(1 + b/a + c/a + d/a)
+           = ln(a) + ln( 1 + exp[ln(b)-ln(a)] + exp[ln(c)-ln(a)] + exp[ln(d)-ln(a)] )
+        */
+        int indexOfMaxL = -1;
+        double max = -1;
+        for (int i = 0; i < mixLogLikelihoods.length; i++) {
+            if (mixLogLikelihoods[i] > max) {
+                max = mixLogLikelihoods[i];
+                indexOfMaxL = i;
+            }
+        }
+
+        double totalLogLikelihood = 0.0; // sum over mix components
+        totalLogLikelihood += mixLogLikelihoods[indexOfMaxL]; // ln(a)
+
+        double sum = 1.0;
+        for (int i = 0; i < mixLogLikelihoods.length; i++) {
+            if (i == indexOfMaxL) continue;
+            sum += Math.exp( 
+                    (mixLogLikelihoods[i]) - (mixLogLikelihoods[indexOfMaxL])
+            );// exp
+        }
+        totalLogLikelihood += Math.log(sum);
+
+        return totalLogLikelihood;
+    }
+    
+    
+    
+    
+    // this is bollocks
+//    private double getLogSumComponents(double[] scaledMixLogLikelihoods, double[] logScalingCorrections){
+//        
+//        if (scaledMixLogLikelihoods.length != logScalingCorrections.length) {
+//            throw new RuntimeException("ERROR: scaledMixLogLikelihoods.length != logScalingCorrections.length");
+//        }
+//        
+//        // bubble sort (descending)
+//        for (int i = 0; i < scaledMixLogLikelihoods.length - 1; i++) {
+//            for (int j = 1; j < scaledMixLogLikelihoods.length - i; j++) {
+//                if (scaledMixLogLikelihoods[j - 1] < scaledMixLogLikelihoods[j]) {
+//                    
+//                    double tmpScaledMixLogLikelihood = scaledMixLogLikelihoods[j];
+//                    scaledMixLogLikelihoods[j] = scaledMixLogLikelihoods[j-1];
+//                    scaledMixLogLikelihoods[j-1] = tmpScaledMixLogLikelihood;
+//
+//                    double tmpLogScalingCorrections = logScalingCorrections[j];
+//                    logScalingCorrections[j] = logScalingCorrections[j-1];
+//                    logScalingCorrections[j-1] = tmpLogScalingCorrections;
+//                }
+//            }// for j
+//        } // for i
+//        
+//        int indexOfMaxL = -1;
+//        for (int i = 0; i < scaledMixLogLikelihoods.length; i++) {
+//            
+//        }
+//        
+//        double correctedLogLikelihood = 0.0;
+//        correctedLogLikelihood += scaledMixLogLikelihoods[0] + logScalingCorrections[0];
+//        
+//        double sum = 1.0;
+//        for (int i = 1; i < scaledMixLogLikelihoods.length; i++) {
+//            sum += Math.exp( 
+//                    (scaledMixLogLikelihoods[i] + logScalingCorrections[i]) - 
+//                            (scaledMixLogLikelihoods[0] + logScalingCorrections[0])
+//            );// exp
+//        }
+//        correctedLogLikelihood += Math.log(sum);
+//                
+//        return correctedLogLikelihood;
+//    }
     
     // normal pruning algorithm. Used for computing marginalL in sanity check
     private double computeTotalL(int site, Count scalingCorrection, double rate){
