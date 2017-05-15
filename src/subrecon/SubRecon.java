@@ -233,7 +233,6 @@ public class SubRecon {
 
     
     public SiteResult analyseSite(int site){
-        // i * pi.length + j + iRate * pi.length*pi.length
         double[] logConditionalMix = new double[pi.length * pi.length * gRates.getNumberOfRates()]; 
         //double sumJointStateProbs = 0.0; // will equal the total likelihood for this site, not conditional on states or rate class
         
@@ -279,22 +278,21 @@ public class SubRecon {
         
         double logMarginalL = Utils.getLnSumComponents(logConditionalMix);
         
-        // compute the joint probabilities we're actually interested in
+        // compute the joint probabilities we're actually interested in, by summing over rate classes
         double[][] jointStateProbs = new double[pi.length][pi.length];
         double[] logRateConditionals = new double[gRates.getNumberOfRates()];
-
+        
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
             for (int iDelta = 0; iDelta < pi.length; iDelta++) {
                 
+                int zone = flatIndex(iAlpha, iDelta, 0); // region of array corresponding to this combination of iAlpha and iDelta
                 for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-                    logRateConditionals[iRate] = logConditionalMix[flatIndex(iAlpha, iDelta, iRate)];
+                    logRateConditionals[iRate] = logConditionalMix[zone+iRate];
                 }
                 
-                jointStateProbs[iAlpha][iDelta] = 
-                        Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL                        
-                        );
-            }
-        }
+                jointStateProbs[iAlpha][iDelta] = Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL);
+            }// iDelta
+        }// iAlpha
         
 //        // normalise
 //        double invSumBranchProbs = 1./sumJointStateProbs;
@@ -339,10 +337,10 @@ public class SubRecon {
     } // analyseSite
     
     
-    private int flatIndex(int iAlpha, int iDelta, int iRate){
-        return iAlpha*pi.length + iDelta + iRate*pi.length*pi.length;
+    private int flatIndex(int i, int j, int k){
+        //return iAlpha*pi.length + iDelta + iRate*pi.length*pi.length;
+        return i * pi.length * gRates.getNumberOfRates() + j * gRates.getNumberOfRates() + k;
     }
-
     
     
     
