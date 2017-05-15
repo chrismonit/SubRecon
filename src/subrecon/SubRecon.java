@@ -274,7 +274,7 @@ public class SubRecon {
             logMarginalMix[iRate] = logMarginalL;
         }
         
-        double logMarginalL = Utils.getLogSumComponents(logMarginalMix); 
+        double logMarginalL = Utils.getLnSumComponents(logMarginalMix); 
         // NB this is not really the marginalLL, since we've not multiplied by invNCat
         // it is the denominator in the joint state prob equation, however
         
@@ -282,7 +282,7 @@ public class SubRecon {
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
             for (int iDelta = 0; iDelta < pi.length; iDelta++) {
                 jointStateProbs[iAlpha][iDelta] = 
-                        Math.exp(Utils.getLogSumComponents(logConditionalMix[iAlpha][iDelta]) - logMarginalL                        
+                        Math.exp(Utils.getLnSumComponents(logConditionalMix[iAlpha][iDelta]) - logMarginalL                        
                         );
             }
         }
