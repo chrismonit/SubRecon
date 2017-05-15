@@ -324,52 +324,7 @@ public class SubRecon {
         return i * pi.length * gRates.getNumberOfRates() + j * gRates.getNumberOfRates() + k;
     }
     
-    
-    
-    
-    // this is bollocks
-//    private double getLogSumComponents(double[] scaledMixLogLikelihoods, double[] logScalingCorrections){
-//        
-//        if (scaledMixLogLikelihoods.length != logScalingCorrections.length) {
-//            throw new RuntimeException("ERROR: scaledMixLogLikelihoods.length != logScalingCorrections.length");
-//        }
-//        
-//        // bubble sort (descending)
-//        for (int i = 0; i < scaledMixLogLikelihoods.length - 1; i++) {
-//            for (int j = 1; j < scaledMixLogLikelihoods.length - i; j++) {
-//                if (scaledMixLogLikelihoods[j - 1] < scaledMixLogLikelihoods[j]) {
-//                    
-//                    double tmpScaledMixLogLikelihood = scaledMixLogLikelihoods[j];
-//                    scaledMixLogLikelihoods[j] = scaledMixLogLikelihoods[j-1];
-//                    scaledMixLogLikelihoods[j-1] = tmpScaledMixLogLikelihood;
-//
-//                    double tmpLogScalingCorrections = logScalingCorrections[j];
-//                    logScalingCorrections[j] = logScalingCorrections[j-1];
-//                    logScalingCorrections[j-1] = tmpLogScalingCorrections;
-//                }
-//            }// for j
-//        } // for i
-//        
-//        int indexOfMaxL = -1;
-//        for (int i = 0; i < scaledMixLogLikelihoods.length; i++) {
-//            
-//        }
-//        
-//        double correctedLogLikelihood = 0.0;
-//        correctedLogLikelihood += scaledMixLogLikelihoods[0] + logScalingCorrections[0];
-//        
-//        double sum = 1.0;
-//        for (int i = 1; i < scaledMixLogLikelihoods.length; i++) {
-//            sum += Math.exp( 
-//                    (scaledMixLogLikelihoods[i] + logScalingCorrections[i]) - 
-//                            (scaledMixLogLikelihoods[0] + logScalingCorrections[0])
-//            );// exp
-//        }
-//        correctedLogLikelihood += Math.log(sum);
-//                
-//        return correctedLogLikelihood;
-//    }
-    
+
     // normal pruning algorithm. Used for computing marginalL in sanity check
     private double computeTotalL(int site, Count scalingCorrection, double rate){
         double sum = 0.0;
