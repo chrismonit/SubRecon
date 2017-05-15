@@ -43,7 +43,7 @@ public class Utils {
         }
         
         int indexOfMaxL = -1;
-        double max = Double.MIN_VALUE;
+        double max = -Double.MAX_VALUE;
         
         for (int i = 0; i < lnValues.length; i++) {
             if (lnValues[i] > max) {

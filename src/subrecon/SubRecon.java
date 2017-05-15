@@ -234,7 +234,7 @@ public class SubRecon {
     
     public SiteResult analyseSite(int site){
         // i * pi.length + j + iRate * pi.length*pi.length
-        double[][][] logConditionalMix = new double[pi.length][pi.length][gRates.getNumberOfRates()]; 
+        double[] logConditionalMix = new double[pi.length * pi.length * gRates.getNumberOfRates()]; 
         //double sumJointStateProbs = 0.0; // will equal the total likelihood for this site, not conditional on states or rate class
         
         for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
@@ -259,30 +259,39 @@ public class SubRecon {
                     
                     double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iDelta)) + Math.log(deltaConditionals[iDelta]); // could log both conditionals AND transition probs in advance
                     double logConditionalL = logScaledConditionalL + logScalingCorrection; // PROBLEM. if scaled loglikelihood is high magnitude negative number, taking exp below will give zero
-                    logConditionalMix[iAlpha][iDelta][iRate] = logConditionalL; // contribution from this rate class
+                    logConditionalMix[flatIndex(iAlpha,iDelta,iRate)] = logConditionalL; // contribution from this rate class
                 }// iDelta
             }// iAlpha
             
         } // for iRate
         
-        // compute marginal. This could be moved into the loop above
-        double[] logMarginalMix = new double[gRates.getNumberOfRates()];
-        for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-            Count marginalScalingCount = new Count();
-            double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
-            double logMarginalL = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
-            logMarginalMix[iRate] = logMarginalL;
-        }
-        
-        double logMarginalL = Utils.getLnSumComponents(logMarginalMix); 
+//        // compute marginal. This could be moved into the loop above
+//        double[] logMarginalMix = new double[gRates.getNumberOfRates()];
+//        for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
+//            Count marginalScalingCount = new Count();
+//            double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
+//            double logMarginalL = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
+//            logMarginalMix[iRate] = logMarginalL;
+//        }
+//        
+//        double logMarginalL = Utils.getLnSumComponents(logMarginalMix); 
         // NB this is not really the marginalLL, since we've not multiplied by invNCat
-        // it is the denominator in the joint state prob equation, however
         
+        double logMarginalL = Utils.getLnSumComponents(logConditionalMix);
+        
+        // compute the joint probabilities we're actually interested in
         double[][] jointStateProbs = new double[pi.length][pi.length];
+        double[] logRateConditionals = new double[gRates.getNumberOfRates()];
+
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
             for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+                
+                for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
+                    logRateConditionals[iRate] = logConditionalMix[flatIndex(iAlpha, iDelta, iRate)];
+                }
+                
                 jointStateProbs[iAlpha][iDelta] = 
-                        Math.exp(Utils.getLnSumComponents(logConditionalMix[iAlpha][iDelta]) - logMarginalL                        
+                        Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL                        
                         );
             }
         }
@@ -330,7 +339,9 @@ public class SubRecon {
     } // analyseSite
     
     
-    
+    private int flatIndex(int iAlpha, int iDelta, int iRate){
+        return iAlpha*pi.length + iDelta + iRate*pi.length*pi.length;
+    }
 
     
     
