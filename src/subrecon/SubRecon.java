@@ -48,6 +48,7 @@ public class SubRecon {
     
     private AminoAcidModel model;    
     private double[] pi;
+    private double[] logPi;
 
     private int site;
     
@@ -58,7 +59,7 @@ public class SubRecon {
     
     private double shape; // shape parameter for gamma dist (alpha)
     private int nCat; // rate categories for gamma dist
-    double invNCat;
+    double logNCat;
     
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
@@ -132,11 +133,12 @@ public class SubRecon {
         
         this.shape = comArgs.getShape();
         this.nCat = comArgs.getNCat();
-        this.invNCat = 1./(double)nCat;
+        this.logNCat = Math.log(nCat);
         
         // TODO this should be moved to try block, should throw exception if model identifier makes no sense
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
+        this.logPi = Utils.getLnValues(pi);
         
         try{ // check input parameters are ok
             loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
@@ -242,44 +244,35 @@ public class SubRecon {
             // compute conditional lnls
             Count alphaScalingCount = new Count();
             Count deltaScalingCount = new Count();
-            // these have not yet been corrected for scaling:
-            double[] alphaConditionals = downTreeMarginal(nodeA, site, alphaScalingCount, rate); // TODO should log all of these here (and correct for scaling?)
-            double[] deltaConditionals = downTreeMarginal(nodeD, site, deltaScalingCount, rate);            
+            
+            // these have not yet been corrected for scaling. TODO could we correct for scaling here?
+            double[] logAlphaConditionals = Utils.getLnValues(downTreeMarginal(nodeA, site, alphaScalingCount, rate));
+            double[] logDeltaConditionals = Utils.getLnValues(downTreeMarginal(nodeD, site, deltaScalingCount, rate));            
             
             double logScalingCorrection = alphaScalingCount.get() + deltaScalingCount.get(); //NB this is a logged value
-            //System.out.println("scalingCorrection "+scalingCorrection);
+            
             model.setDistance(branchLengthAD * rate);
 
             for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
 
-                double logAlphaTerms = Math.log(pi[iAlpha]) + Math.log(alphaConditionals[iAlpha]); // NB could store log pi values
+                double logAlphaTerms = logPi[iAlpha] + logAlphaConditionals[iAlpha]; // NB could store log pi values
 
                 for (int iDelta = 0; iDelta < pi.length; iDelta++) {
                     
-                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iDelta)) + Math.log(deltaConditionals[iDelta]); // could log both conditionals AND transition probs in advance
-                    double logConditionalL = logScaledConditionalL + logScalingCorrection; // PROBLEM. if scaled loglikelihood is high magnitude negative number, taking exp below will give zero
+                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iDelta)) + logDeltaConditionals[iDelta]; // could log both conditionals AND transition probs in advance
+                    double logConditionalL = logScaledConditionalL + logScalingCorrection;
                     logConditionalMix[flatIndex(iAlpha,iDelta,iRate)] = logConditionalL; // contribution from this rate class
                 }// iDelta
             }// iAlpha
             
         } // for iRate
         
-//        // compute marginal. This could be moved into the loop above
-//        double[] logMarginalMix = new double[gRates.getNumberOfRates()];
-//        for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-//            Count marginalScalingCount = new Count();
-//            double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
-//            double logMarginalL = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
-//            logMarginalMix[iRate] = logMarginalL;
-//        }
-//        
-//        double logMarginalL = Utils.getLnSumComponents(logMarginalMix); 
-        // NB this is not really the marginalLL, since we've not multiplied by invNCat
+
         
-        double logMarginalL = Utils.getLnSumComponents(logConditionalMix);
+        double logMarginalL = Utils.getLnSumComponents(logConditionalMix); // NB this is not really the marginalLL, since we've not multiplied by 1/nCat
         
         // compute the joint probabilities we're actually interested in, by summing over rate classes
-        double[][] jointStateProbs = new double[pi.length][pi.length];
+        double[][] jointStateProbs = new double[pi.length][pi.length]; // NB this certainly needs to be a new instance
         double[] logRateConditionals = new double[gRates.getNumberOfRates()];
         
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
@@ -294,45 +287,34 @@ public class SubRecon {
             }// iDelta
         }// iAlpha
         
-//        // normalise
-//        double invSumBranchProbs = 1./sumJointStateProbs;
-//        System.out.println("1/sum="+invSumBranchProbs);
-//        
-//        System.out.println("sum="+sumJointStateProbs);
-//        for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-//            for (int iDelta = 0; iDelta < pi.length; iDelta++) {
-//                logJointStateProbs[iAlpha][iDelta] *= invSumBranchProbs;
-//            }
-//        }
-                // TODO restore sanity checks
-//        if (sanityCheck) {
-//            // 1) check sum of conditional probs equals marginal
-//            // NB the marginal and sumBranchProbs both should include multiplier 1/nCat (prob of rate class), but these cancel since we take the ratio
-//            double sumMarginalL = 0.0; // sum over rate classes. Called marginal because marginalises over iAlpha and iDelta states
-//            for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-//                Count marginalScalingCount = new Count();
-//                double scaledMarginalLL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
-//                double marginalL = Math.exp( scaledMarginalLL + marginalScalingCount.get() ); // correcting for scaling
-//                sumMarginalL += marginalL;            
-//            }// iRate
-//           
-//            if (sumJointStateProbs < sumMarginalL-Constants.EPSILON || sumJointStateProbs > sumMarginalL+Constants.EPSILON)
-//                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. sumMarginalL="+sumMarginalL+"; sumJointStateProbs="+sumJointStateProbs);
-//            // 2) having been normalised, check probs sum to 1
-//            double sum = 0.0;
-//            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-//                for (int iDelta = 0; iDelta < pi.length; iDelta++) {
-//                    sum += logJointStateProbs[iAlpha][iDelta];
-//                }
-//            }
-//            if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
-//                throw new RuntimeException("ERROR: Sum of posterior probs != 1.0. sum="+sum);
-//            
-//        }// sanityCheck
+        if (sanityCheck) {
+            // 1) check sum of conditional probs equals marginal
+            // NB this does not strictly compute the log marginal likelihood, since we omit the 1/nCat term, which cancels in the jointStateProbs
+            double[] logComputedMarginalMix = new double[gRates.getNumberOfRates()]; // marginal likelihoods for each part of the rate mixture model
+            for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
+                Count marginalScalingCount = new Count();
+                double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
+                double logComputedMarginalL = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
+                logComputedMarginalMix[iRate] = logComputedMarginalL;
+            }
+            double logSumComputedMarginalL = Utils.getLnSumComponents(logComputedMarginalMix); 
+           
+            if (logSumComputedMarginalL < logMarginalL-Constants.EPSILON || logSumComputedMarginalL > logMarginalL+Constants.EPSILON)
+                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. logSumComputedMarginalL="+logSumComputedMarginalL+"; logMarginalL="+logMarginalL);
+            
+            //2) having been normalised, check probs sum to 1
+            double sum = 0.0;
+            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
+                for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+                    sum += jointStateProbs[iAlpha][iDelta];
+                }
+            }
+            if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
+                throw new RuntimeException("ERROR: Sum of posterior probs != 1.0. sum="+sum);
+        }// sanityCheck
         
-        // invNCat term cancels in when computing jointStateProbs, but must include here
-        // TODO this can be more efficient:
-        double siteMarginalLL = Math.log(invNCat) + logMarginalL; // marginal over alpha, delta and rate classes (ie total likelihood)
+        // 1/nCat term cancels in when computing jointStateProbs, but must include here
+        double siteMarginalLL = logMarginalL - Math.log(nCat); // marginal over alpha, delta and rate classes (ie total likelihood)
         return new SiteResult(site, siteMarginalLL, jointStateProbs, threshold, sortByProb, sigDigits);
     } // analyseSite
     
