@@ -95,7 +95,8 @@ public class SiteResult {
     @Override
     public String toString(){
         
-        StringBuilder s = new StringBuilder();
+        StringBuilder s = new StringBuilder("Site");
+        s.append(Constants.DELIM);
         s.append(site+1); // correct for zero based
         s.append(Constants.DELIM);
         s.append( Utils.roundDouble(marginalLnL, sigDigits) );
