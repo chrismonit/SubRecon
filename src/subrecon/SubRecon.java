@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import pal.alignment.AlignmentParseException;
 import pal.alignment.AlignmentReaders;
 import pal.alignment.SimpleAlignment;
@@ -81,16 +80,21 @@ public class SubRecon {
         this.init(args);
         
         if (site < 0) { // default site value is -1. User has not specified a site to analyse, so we analyse all of them
+            double totalLnL = 0.0; // across sites
+            
             boolean interestingSite = false;
             long start = System.currentTimeMillis();
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
                 
                 SiteResult result = analyseSite(iSite);
+                totalLnL += result.getMarginalLnL();
                 if (verbose || result.getMaxIIProb() <= 1.-threshold) {
                     interestingSite = true; // at least one site has result to be printed
                     System.out.println(result);
                 }// else print nothing
             }// for
+            System.out.println("Total lnL: "+totalLnL);
+
             long duration = System.currentTimeMillis() - start;
             System.out.println("duration: "+(duration/1000) + " s");
             
@@ -139,7 +143,7 @@ public class SubRecon {
         this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
         this.pi = this.model.getEquilibriumFrequencies();
         this.logPi = Utils.getLnValues(pi);
-        
+                
         try{ // check input parameters are ok
             loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
             root = this.tree.getRoot();
@@ -266,9 +270,7 @@ public class SubRecon {
             }// iAlpha
             
         } // for iRate
-        
-
-        
+                
         double logMarginalL = Utils.getLnSumComponents(logConditionalMix); // NB this is not really the marginalLL, since we've not multiplied by 1/nCat
         
         // compute the joint probabilities we're actually interested in, by summing over rate classes
@@ -391,7 +393,7 @@ public class SubRecon {
                 parentConditionals[iParentState] /= (biggestValue + Constants.TINY_QUANTITY); // The added small value is to prevent divide by zero problems
         }
         scalingCorrection.add( Math.log(biggestValue + Constants.TINY_QUANTITY) ); // keep track of the scaling amount as you go
-        
+                                                                                                                                     
         return parentConditionals;
     }// downTreeConditional
     
