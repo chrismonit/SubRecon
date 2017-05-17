@@ -139,13 +139,10 @@ public class SubRecon {
         this.nCat = comArgs.getNCat();
         this.logNCat = Math.log(nCat);
         
-        // TODO this should be moved to try block, should throw exception if model identifier makes no sense
-        this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
-        this.pi = this.model.getEquilibriumFrequencies();
-        this.logPi = Utils.getLnValues(pi);
-                
+
         try{ // check input parameters are ok
             loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
+            this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
             root = this.tree.getRoot();
             
             if (sigDigits < 1 || sigDigits > 15) 
@@ -167,6 +164,9 @@ public class SubRecon {
             System.out.println(e.getMessage());
             helpAndExit(jcom, 1);
         }
+        
+        this.pi = this.model.getEquilibriumFrequencies();
+        this.logPi = Utils.getLnValues(pi);
         
         nodeA = root.getChild(0);  
         nodeD = root.getChild(1);
@@ -196,8 +196,7 @@ public class SubRecon {
     
     
     
-    // TODO should throw parameter exception
-    private AminoAcidModel assignModel(String modelID, double[] frequencies){
+    private AminoAcidModel assignModel(String modelID, double[] frequencies) throws ParameterException {
     
         AminoAcidModel model;
         if (frequencies == null) { // use default model frequencies
@@ -210,7 +209,7 @@ public class SubRecon {
             }else if (modelID.equals(Constants.BLOSUM62_ID)){
                 model = new BLOSUM62(BLOSUM62.getOriginalFrequencies());
             }else{
-                throw new RuntimeException("ERROR: Model identifier not recognised");
+                throw new ParameterException("ERROR: Model identifier not recognised");
             }            
         }else{
             if (modelID.equals(Constants.DAYHOFF_ID)) {
@@ -222,7 +221,7 @@ public class SubRecon {
             }else if (modelID.equals(Constants.BLOSUM62_ID)){
                 model = new BLOSUM62(frequencies);
             }else{
-                throw new RuntimeException("ERROR: Model identifier not recognised");
+                throw new ParameterException("ERROR: Model identifier not recognised");
             }             
         }
         
