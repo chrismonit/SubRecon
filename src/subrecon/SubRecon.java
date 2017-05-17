@@ -53,7 +53,7 @@ public class SubRecon {
     
     private Node root;
     private Node nodeA;
-    private Node nodeD;
+    private Node nodeB;
     private double branchLengthAD;
     
     private double shape; // shape parameter for gamma dist (alpha)
@@ -169,14 +169,14 @@ public class SubRecon {
         this.logPi = Utils.getLnValues(pi);
         
         nodeA = root.getChild(0);  
-        nodeD = root.getChild(1);
+        nodeB = root.getChild(1);
         
         /* 
             The original root is along the branch connecting A and D.
             Therefore the length of the branch connecting A and D is the sum 
             of the two branches descending from the original root.
         */ 
-        branchLengthAD = nodeA.getBranchLength() + nodeD.getBranchLength();
+        branchLengthAD = nodeA.getBranchLength() + nodeB.getBranchLength();
         
         gRates = new GammaRates(nCat, shape);        
         
@@ -246,13 +246,13 @@ public class SubRecon {
             
             // compute conditional lnls
             Count alphaScalingCount = new Count();
-            Count deltaScalingCount = new Count();
+            Count betaScalingCount = new Count();
             
             // these have not yet been corrected for scaling. TODO could we correct for scaling here?
             double[] logAlphaConditionals = Utils.getLnValues(downTreeMarginal(nodeA, site, alphaScalingCount, rate));
-            double[] logDeltaConditionals = Utils.getLnValues(downTreeMarginal(nodeD, site, deltaScalingCount, rate));            
+            double[] logBetaConditionals = Utils.getLnValues(downTreeMarginal(nodeB, site, betaScalingCount, rate));            
             
-            double logScalingCorrection = alphaScalingCount.get() + deltaScalingCount.get(); //NB this is a logged value
+            double logScalingCorrection = alphaScalingCount.get() + betaScalingCount.get(); //NB this is a logged value
             
             model.setDistance(branchLengthAD * rate);
 
@@ -260,12 +260,12 @@ public class SubRecon {
 
                 double logAlphaTerms = logPi[iAlpha] + logAlphaConditionals[iAlpha]; // NB could store log pi values
 
-                for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
                     
-                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iDelta)) + logDeltaConditionals[iDelta]; // could log both conditionals AND transition probs in advance
+                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iBeta)) + logBetaConditionals[iBeta]; // could log both conditionals AND transition probs in advance
                     double logConditionalL = logScaledConditionalL + logScalingCorrection;
-                    logConditionalMix[flatIndex(iAlpha,iDelta,iRate)] = logConditionalL; // contribution from this rate class
-                }// iDelta
+                    logConditionalMix[flatIndex(iAlpha,iBeta,iRate)] = logConditionalL; // contribution from this rate class
+                }// iBeta
             }// iAlpha
             
         } // for iRate
@@ -277,15 +277,15 @@ public class SubRecon {
         double[] logRateConditionals = new double[gRates.getNumberOfRates()];
         
         for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-            for (int iDelta = 0; iDelta < pi.length; iDelta++) {
+            for (int iBeta = 0; iBeta < pi.length; iBeta++) {
                 
-                int zone = flatIndex(iAlpha, iDelta, 0); // region of array corresponding to this combination of iAlpha and iDelta
+                int zone = flatIndex(iAlpha, iBeta, 0); // region of array corresponding to this combination of iAlpha and iBeta
                 for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
                     logRateConditionals[iRate] = logConditionalMix[zone+iRate];
                 }
                 
-                jointStateProbs[iAlpha][iDelta] = Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL);
-            }// iDelta
+                jointStateProbs[iAlpha][iBeta] = Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL);
+            }// iBeta
         }// iAlpha
         
         if (sanityCheck) {
@@ -306,8 +306,8 @@ public class SubRecon {
             //2) having been normalised, check probs sum to 1
             double sum = 0.0;
             for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-                for (int iDelta = 0; iDelta < pi.length; iDelta++) {
-                    sum += jointStateProbs[iAlpha][iDelta];
+                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
+                    sum += jointStateProbs[iAlpha][iBeta];
                 }
             }
             if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
@@ -315,13 +315,13 @@ public class SubRecon {
         }// sanityCheck
         
         // 1/nCat term cancels in when computing jointStateProbs, but must include here
-        double siteMarginalLL = logMarginalL - Math.log(nCat); // marginal over alpha, delta and rate classes (ie total likelihood)
+        double siteMarginalLL = logMarginalL - Math.log(nCat); // marginal over alpha, beta and rate classes (ie total likelihood)
         return new SiteResult(site, siteMarginalLL, jointStateProbs, threshold, sortByProb, sigDigits);
     } // analyseSite
     
     
     private int flatIndex(int i, int j, int k){
-        //return iAlpha*pi.length + iDelta + iRate*pi.length*pi.length;
+        //return iAlpha*pi.length + iBeta + iRate*pi.length*pi.length;
         return i * pi.length * gRates.getNumberOfRates() + j * gRates.getNumberOfRates() + k;
     }
     
