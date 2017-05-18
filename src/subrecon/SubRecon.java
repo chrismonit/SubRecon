@@ -10,7 +10,6 @@ import pal.alignment.AlignmentParseException;
 import pal.alignment.AlignmentReaders;
 import pal.alignment.SimpleAlignment;
 import pal.datatype.AminoAcids;
-import pal.misc.Identifier;
 import pal.substmodel.AminoAcidModel;
 import pal.substmodel.BLOSUM62;
 import pal.substmodel.Dayhoff;
@@ -20,7 +19,6 @@ import pal.substmodel.WAG;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
 import pal.tree.ReadTree;
-import pal.tree.SimpleNode;
 import pal.tree.Tree;
 import pal.tree.TreeParseException;
 
@@ -30,16 +28,16 @@ import pal.tree.TreeParseException;
  * 
  * Fig. 1 Representation of tree showing node nomenclature used here. r = root.
  * The conventional pruning algorithm is used to compute conditional probability 
- * vectors for clades A and D.
+ * vectors for clades A and B.
  * 
  *       |-----
- *   |---|D
+ *   |---|A
  *   |   |-----
  *   |
  * r-|
  *   |
  *   |   |----
- *   |---|A
+ *   |---|B
  *       |----
  * 
  */
