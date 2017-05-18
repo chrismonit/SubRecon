@@ -10,6 +10,7 @@ import pal.alignment.AlignmentParseException;
 import pal.alignment.AlignmentReaders;
 import pal.alignment.SimpleAlignment;
 import pal.datatype.AminoAcids;
+import pal.misc.Identifier;
 import pal.substmodel.AminoAcidModel;
 import pal.substmodel.BLOSUM62;
 import pal.substmodel.Dayhoff;
@@ -17,7 +18,9 @@ import pal.substmodel.GammaRates;
 import pal.substmodel.JTT;
 import pal.substmodel.WAG;
 import pal.tree.Node;
+import pal.tree.NodeUtils;
 import pal.tree.ReadTree;
+import pal.tree.SimpleNode;
 import pal.tree.Tree;
 import pal.tree.TreeParseException;
 
@@ -170,7 +173,7 @@ public class SubRecon {
         
         nodeA = root.getChild(0);  
         nodeB = root.getChild(1);
-        
+
         /* 
             The original root is along the branch connecting A and D.
             Therefore the length of the branch connecting A and D is the sum 
@@ -179,6 +182,8 @@ public class SubRecon {
         branchLengthAD = nodeA.getBranchLength() + nodeB.getBranchLength();
         
         gRates = new GammaRates(nCat, shape);        
+        
+        // TODO need to print some intro information, including citation
         
         try{
             PrintWriter writer = new PrintWriter(System.out);
@@ -191,10 +196,26 @@ public class SubRecon {
         }
         System.out.println("");
         
+        System.out.println("------------------------------------------------------------");
+        System.out.println("Joint reconstructions are presented in the form [ab:x],");
+        System.out.println("meaning x is the joint probability of residue [a] being");
+        System.out.println("present at node [A] and state [b] being present at node [B].");
+        System.out.println("Node [A] is has "+NodeUtils.getLeafCount(nodeA)+" tips and contains taxon "+getSingleTerminalNode(nodeA).getIdentifier().getName());
+        System.out.println("Node [B] is has "+NodeUtils.getLeafCount(nodeB)+" tips and contains taxon "+getSingleTerminalNode(nodeB).getIdentifier().getName());
+        System.out.println("------------------------------------------------------------");
     } // init
     
+    private Node getSingleTerminalNode(Node parent){
+        Node n;
+        if (parent.isLeaf()) {
+            n = parent;
+        }else{
+            n = getSingleTerminalNode(parent.getChild(0));
+        }
+        return n;
+    }
     
-    
+
     
     private AminoAcidModel assignModel(String modelID, double[] frequencies) throws ParameterException {
     
