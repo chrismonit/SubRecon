@@ -42,7 +42,7 @@ import pal.tree.TreeParseException;
  * 
  */
 public class SubRecon {
-    private boolean sanityCheck = true;
+    private boolean sanityCheck;
     private AdvancedAlignmentAminoAcid alignment;
     private Tree tree;
     
@@ -135,6 +135,7 @@ public class SubRecon {
         this.threshold =  comArgs.getThreshold();
         this.verbose = comArgs.getVerbose();
         this.sigDigits = comArgs.getSigDigits();
+        this.sanityCheck = comArgs.getDebug();
         
         this.shape = comArgs.getShape();
         this.nCat = comArgs.getNCat();
@@ -192,6 +193,12 @@ public class SubRecon {
             e.printStackTrace();
             System.exit(1);
         }
+        
+        if (sanityCheck) {
+            System.out.println("");
+            System.out.println("######### sanityCheck == true #########");
+        }
+        
         System.out.println("");
         
         System.out.println("------------------------------------------------------------");

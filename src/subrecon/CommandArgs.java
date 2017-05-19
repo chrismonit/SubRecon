@@ -126,6 +126,13 @@ public class CommandArgs {
         return verbose;
     }
     
+    @Parameter(names = {"-debug"}, required = false, description = "Perform additional sanity checks during calculations - for development tesing only")
+    private boolean debug = false;
+    
+    public boolean getDebug(){
+        return debug;
+    }
+    
     @Parameter(names = {"-sd"}, required = false, description = "Number of significant digits to round probabilities when printing")
     private int sigDigits = 2;
         
