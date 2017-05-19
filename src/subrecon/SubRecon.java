@@ -208,6 +208,9 @@ public class SubRecon {
         System.out.println("Node [A] is has "+NodeUtils.getLeafCount(nodeA)+" tips and contains taxon "+getSingleTerminalNode(nodeA).getIdentifier().getName());
         System.out.println("Node [B] is has "+NodeUtils.getLeafCount(nodeB)+" tips and contains taxon "+getSingleTerminalNode(nodeB).getIdentifier().getName());
         System.out.println("------------------------------------------------------------");
+        
+        System.out.println(SiteResult.getHeader());
+    
     } // init
     
     private Node getSingleTerminalNode(Node parent){

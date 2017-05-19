@@ -92,6 +92,10 @@ public class SiteResult {
         return maxIIProb;
     }
     
+    public static String getHeader(){
+        return String.join(Constants.DELIM, new String[]{"[HEADER]", "site", "lnL", "joint_probs"});
+    }
+    
     @Override
     public String toString(){
         
