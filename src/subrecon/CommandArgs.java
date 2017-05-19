@@ -113,7 +113,7 @@ public class CommandArgs {
     }
     
     @Parameter(names = {"-threshold"}, required = false, description = "Minimum probability value for a substitution to be displayed ('-threshold 0.0' will print all 400 possibilities)")
-    private double threshold = 0.01;
+    private double threshold = 0.4;
         
     public double getThreshold(){
         return threshold;
