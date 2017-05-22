@@ -6,6 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import pal.alignment.AlignmentParseException;
 import pal.alignment.AlignmentReaders;
 import pal.alignment.SimpleAlignment;
@@ -70,6 +77,8 @@ public class SubRecon {
     
     private CommandArgs comArgs;
     
+    private int nThreads = 1; // TODO make softcoded
+    
     public SubRecon(){}
     
     public static void main(String[] args) {
@@ -80,35 +89,64 @@ public class SubRecon {
         
         this.init(args);
         
-        if (site < 0) { // default site value is -1. User has not specified a site to analyse, so we analyse all of them
-            double totalLnL = 0.0; // across sites
-            
-            boolean interestingSite = false;
+        if (site > -1) { // a single site to analyse
+            System.out.println(analyseSite(site)); // a single named site is being analysed
+        }else{
+            // run analyses
+            ExecutorService threadPool = Executors.newFixedThreadPool(nThreads);        
             long start = System.currentTimeMillis();
+            
+            List<Future<SiteResult>> siteResults = new ArrayList<Future<SiteResult>>();
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
+                final int s = iSite; // variables referenced in inner class must be final
+                Future<SiteResult> siteResult = threadPool.submit(
+                        new Callable<SiteResult>(){
+                            @Override
+                            public SiteResult call(){
+                                return analyseSite(s);
+                            }// call
+                        }// new Callable
+                );// submit
+                siteResults.add(siteResult);
+            }// for iSite
+            threadPool.shutdown();
+            long duration = System.currentTimeMillis() - start;
+            
+            
+            // print results
+            boolean interestingSite = false;
+            double totalLnL = 0.0; // across sites
+            for (int iSite = 0; iSite < siteResults.size(); iSite++) {
+                SiteResult result;
+                try{
+                    result = siteResults.get(iSite).get();
+                }catch(InterruptedException e){
+                    System.out.println("ERROR: Site "+(iSite+1));
+                    e.printStackTrace();
+                    continue;
+                }catch(ExecutionException e){
+                    System.out.println("ERROR: Site "+(iSite+1));
+                    e.printStackTrace();
+                    continue;
+                }
                 
-                SiteResult result = analyseSite(iSite);
                 totalLnL += result.getMarginalLnL();
                 if (verbose || result.getMaxIIProb() <= 1.-threshold) {
                     interestingSite = true; // at least one site has result to be printed
                     System.out.println(result);
-                }// else print nothing
-            }// for
+                }// else print nothing                
+            }// for iSite
             System.out.println("Total lnL: "+totalLnL);
 
-            long duration = System.currentTimeMillis() - start;
-            System.out.println("duration: "+(duration/1000) + " s");
-            
             if (!interestingSite) { // produce output if no sites are deemed interesting, to avoid confusion
                 System.out.println("0 sites have non-identical substitution probabilities greater than threshold value");
                 System.out.println("Threshold="+threshold);
                 System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
             }// if
-        }else{
-            System.out.println(analyseSite(site)); // a single named site is being analysed
-        }
-
-    }
+            System.out.println("duration: "+(duration/1000) + " s");
+        }// else (analysing all sites)
+        
+    }// run
     
     
     private void init(String[] args){
