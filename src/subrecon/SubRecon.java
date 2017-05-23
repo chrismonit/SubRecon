@@ -73,7 +73,7 @@ public class SubRecon {
     
     private CommandArgs comArgs;
     
-    private int nThreads = 6; // TODO make softcoded
+    private int nThreads;
     
     public SubRecon(){}
     
@@ -165,6 +165,7 @@ public class SubRecon {
         this.verbose = comArgs.getVerbose();
         this.sigDigits = comArgs.getSigDigits();
         this.sanityCheck = comArgs.getDebug();
+        this.nThreads = comArgs.getNThreads();
         
         double shape = comArgs.getShape();
         int nCat = comArgs.getNCat();
@@ -194,7 +195,9 @@ public class SubRecon {
             
             if (root.getChildCount() > 2) 
                 throw new ParameterException("ERROR: Tree root has more than two descendents. Is the tree rooted correctly?");
-        
+            
+            if (nThreads < 1) 
+                throw new ParameterException("ERROR: -T (number of threads) must be 1 or higher");
         }catch (ParameterException e){
             System.out.println(e.getMessage());
             helpAndExit(jcom, 1);
@@ -223,6 +226,8 @@ public class SubRecon {
         }
         
         System.out.println("");
+        System.out.println("Using "+nThreads+" thread(s)");
+        System.out.println("");
         
         System.out.println("------------------------------------------------------------");
         System.out.println("Joint reconstructions are presented in the form [ab:x],");
@@ -233,7 +238,7 @@ public class SubRecon {
         System.out.println("------------------------------------------------------------");
         
         System.out.println(SiteResult.getHeader());
-    
+                
     } // init
     
     private Node getSingleTerminalNode(Node parent){

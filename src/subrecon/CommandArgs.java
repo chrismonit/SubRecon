@@ -139,4 +139,11 @@ public class CommandArgs {
     public int getSigDigits(){
         return sigDigits;
     }
+    
+    @Parameter(names = {"-threats", "-T"}, required = false, description = "Number of threads to use (usually the number of spare CPUs on the machine)")
+    private int nThreads = 1;
+    
+    public int getNThreads(){
+        return nThreads; // user can give site number in non-zero based
+    }
 }
