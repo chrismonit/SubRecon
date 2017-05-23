@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,20 +52,17 @@ public class SubRecon {
     private AdvancedAlignmentAminoAcid alignment;
     private Tree tree;
     
-    private AminoAcidModel model;    
     private double[] pi;
     private double[] logPi;
 
     private int site;
     
-    private Node root;
-    private Node nodeA;
-    private Node nodeB;
-    private double branchLengthAD;
+    //private Node root;
+    //private Node nodeA;
+    //private Node nodeB;
     
-    private double shape; // shape parameter for gamma dist (alpha)
-    private int nCat; // rate categories for gamma dist
-    double logNCat;
+    //private double shape; // shape parameter for gamma dist (alpha)
+    //private int nCat; // rate categories for gamma dist
     
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
@@ -77,7 +73,7 @@ public class SubRecon {
     
     private CommandArgs comArgs;
     
-    private int nThreads = 1; // TODO make softcoded
+    private int nThreads = 6; // TODO make softcoded
     
     public SubRecon(){}
     
@@ -88,36 +84,30 @@ public class SubRecon {
     public void run(String[] args){
         
         this.init(args);
-        
         if (site > -1) { // a single site to analyse
-            System.out.println(analyseSite(site)); // a single named site is being analysed
+            SiteResult result = new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, gRates, threshold, sigDigits, sortByProb, sanityCheck, site).call();
+            System.out.println(result);
         }else{
             // run analyses
-            ExecutorService threadPool = Executors.newFixedThreadPool(nThreads);        
             long start = System.currentTimeMillis();
+            ExecutorService threadPool = Executors.newFixedThreadPool(nThreads);        
             
             List<Future<SiteResult>> siteResults = new ArrayList<Future<SiteResult>>();
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
-                final int s = iSite; // variables referenced in inner class must be final
                 Future<SiteResult> siteResult = threadPool.submit(
-                        new Callable<SiteResult>(){
-                            @Override
-                            public SiteResult call(){
-                                return analyseSite(s);
-                            }// call
-                        }// new Callable
+                        new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, gRates, threshold, sigDigits, sortByProb, sanityCheck, iSite  )
                 );// submit
                 siteResults.add(siteResult);
             }// for iSite
+            
             threadPool.shutdown();
-            long duration = System.currentTimeMillis() - start;
             
             
             // print results
             boolean interestingSite = false;
             double totalLnL = 0.0; // across sites
             for (int iSite = 0; iSite < siteResults.size(); iSite++) {
-                SiteResult result;
+                SiteResult result = null;
                 try{
                     result = siteResults.get(iSite).get();
                 }catch(InterruptedException e){
@@ -143,6 +133,7 @@ public class SubRecon {
                 System.out.println("Threshold="+threshold);
                 System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
             }// if
+            long duration = System.currentTimeMillis() - start;
             System.out.println("duration: "+(duration/1000) + " s");
         }// else (analysing all sites)
         
@@ -150,7 +141,7 @@ public class SubRecon {
     
     
     private void init(String[] args){
-
+        
         // assign fields
         this.comArgs = new CommandArgs();
         JCommander jcom = new JCommander(this.comArgs);
@@ -175,15 +166,19 @@ public class SubRecon {
         this.sigDigits = comArgs.getSigDigits();
         this.sanityCheck = comArgs.getDebug();
         
-        this.shape = comArgs.getShape();
-        this.nCat = comArgs.getNCat();
-        this.logNCat = Math.log(nCat);
+        double shape = comArgs.getShape();
+        int nCat = comArgs.getNCat();
         
-
+        this.pi = comArgs.getFrequencies(); // TODO not sure we need to store these, could just be logged values
+        this.logPi = Utils.getLnValues(pi);
+        
+        AminoAcidModel reportModel = null;
+        Node root = null;
+        
         try{ // check input parameters are ok
-            loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());
-            this.model = assignModel(comArgs.getModelID(), comArgs.getFrequencies());
+            loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());            
             root = this.tree.getRoot();
+            reportModel = getModelInstance(comArgs.getModelID(), pi);
             
             if (sigDigits < 1 || sigDigits > 15) 
                 throw new ParameterException("ERROR: -sd (significant digits) argument must be 0 < sd < 16");
@@ -205,26 +200,16 @@ public class SubRecon {
             helpAndExit(jcom, 1);
         }
         
-        this.pi = this.model.getEquilibriumFrequencies();
-        this.logPi = Utils.getLnValues(pi);
-        
-        nodeA = root.getChild(0);  
-        nodeB = root.getChild(1);
+        Node nodeA = root.getChild(0);  
+        Node nodeB = root.getChild(1);
 
-        /* 
-            The original root is along the branch connecting A and D.
-            Therefore the length of the branch connecting A and D is the sum 
-            of the two branches descending from the original root.
-        */ 
-        branchLengthAD = nodeA.getBranchLength() + nodeB.getBranchLength();
-        
         gRates = new GammaRates(nCat, shape);        
         
         // TODO need to print some intro information, including citation
         
         try{
             PrintWriter writer = new PrintWriter(System.out);
-            model.report(writer);
+            reportModel.report(writer);
             gRates.report(writer);
             writer.flush();
         }catch(Exception e){
@@ -243,8 +228,8 @@ public class SubRecon {
         System.out.println("Joint reconstructions are presented in the form [ab:x],");
         System.out.println("meaning x is the joint probability of residue [a] being");
         System.out.println("present at node [A] and state [b] being present at node [B].");
-        System.out.println("Node [A] is has "+NodeUtils.getLeafCount(nodeA)+" tips and contains taxon "+getSingleTerminalNode(nodeA).getIdentifier().getName());
-        System.out.println("Node [B] is has "+NodeUtils.getLeafCount(nodeB)+" tips and contains taxon "+getSingleTerminalNode(nodeB).getIdentifier().getName());
+        System.out.println("Node [A] is has "+NodeUtils.getLeafCount(nodeA)+" tips and contains taxon "+getSingleTerminalNode(nodeA).getIdentifier().getName()+".");
+        System.out.println("Node [B] is has "+NodeUtils.getLeafCount(nodeB)+" tips and contains taxon "+getSingleTerminalNode(nodeB).getIdentifier().getName()+".");
         System.out.println("------------------------------------------------------------");
         
         System.out.println(SiteResult.getHeader());
@@ -261,31 +246,31 @@ public class SubRecon {
         return n;
     }
     
-
     
-    private AminoAcidModel assignModel(String modelID, double[] frequencies) throws ParameterException {
+
+    private AminoAcidModel getModelInstance(String modelArgument, double[] frequencies) throws ParameterException {
     
         AminoAcidModel model;
         if (frequencies == null) { // use default model frequencies
-            if (modelID.equals(Constants.DAYHOFF_ID)) {
+            if (modelArgument.equals(Constants.DAYHOFF_ID)) {
                 model = new Dayhoff(Dayhoff.getOriginalFrequencies());
-            }else if (modelID.equals(Constants.JTT_ID)){
+            }else if (modelArgument.equals(Constants.JTT_ID)){
                 model = new JTT(JTT.getOriginalFrequencies());
-            }else if (modelID.equals(Constants.WAG_ID)){
+            }else if (modelArgument.equals(Constants.WAG_ID)){
                 model = new WAG(WAG.getOriginalFrequencies());
-            }else if (modelID.equals(Constants.BLOSUM62_ID)){
+            }else if (modelArgument.equals(Constants.BLOSUM62_ID)){
                 model = new BLOSUM62(BLOSUM62.getOriginalFrequencies());
             }else{
                 throw new ParameterException("ERROR: Model identifier not recognised");
             }            
         }else{
-            if (modelID.equals(Constants.DAYHOFF_ID)) {
+            if (modelArgument.equals(Constants.DAYHOFF_ID)) {
                 model = new Dayhoff(frequencies);
-            }else if (modelID.equals(Constants.JTT_ID)){
+            }else if (modelArgument.equals(Constants.JTT_ID)){
                 model = new JTT(frequencies);
-            }else if (modelID.equals(Constants.WAG_ID)){
+            }else if (modelArgument.equals(Constants.WAG_ID)){
                 model = new WAG(frequencies);
-            }else if (modelID.equals(Constants.BLOSUM62_ID)){
+            }else if (modelArgument.equals(Constants.BLOSUM62_ID)){
                 model = new BLOSUM62(frequencies);
             }else{
                 throw new ParameterException("ERROR: Model identifier not recognised");
@@ -302,167 +287,6 @@ public class SubRecon {
         handler.printOptions(jcom);
         System.exit(exitStatus);
     }
-
-    
-    public SiteResult analyseSite(int site){
-        double[] logConditionalMix = new double[pi.length * pi.length * gRates.getNumberOfRates()]; 
-        //double sumJointStateProbs = 0.0; // will equal the total likelihood for this site, not conditional on states or rate class
-        
-        for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-            double rate = gRates.getRate(iRate);        
-            
-            // compute conditional lnls
-            Count alphaScalingCount = new Count();
-            Count betaScalingCount = new Count();
-            
-            // these have not yet been corrected for scaling. TODO could we correct for scaling here?
-            double[] logAlphaConditionals = Utils.getLnValues(downTreeMarginal(nodeA, site, alphaScalingCount, rate));
-            double[] logBetaConditionals = Utils.getLnValues(downTreeMarginal(nodeB, site, betaScalingCount, rate));            
-            
-            double logScalingCorrection = alphaScalingCount.get() + betaScalingCount.get(); //NB this is a logged value
-            
-            model.setDistance(branchLengthAD * rate);
-
-            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-
-                double logAlphaTerms = logPi[iAlpha] + logAlphaConditionals[iAlpha]; // NB could store log pi values
-
-                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
-                    
-                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iBeta)) + logBetaConditionals[iBeta]; // could log both conditionals AND transition probs in advance
-                    double logConditionalL = logScaledConditionalL + logScalingCorrection;
-                    logConditionalMix[flatIndex(iAlpha,iBeta,iRate)] = logConditionalL; // contribution from this rate class
-                }// iBeta
-            }// iAlpha
-            
-        } // for iRate
-                
-        double logMarginalL = Utils.getLnSumComponents(logConditionalMix); // NB this is not really the marginalLL, since we've not multiplied by 1/nCat
-        
-        // compute the joint probabilities we're actually interested in, by summing over rate classes
-        double[][] jointStateProbs = new double[pi.length][pi.length]; // NB this certainly needs to be a new instance
-        double[] logRateConditionals = new double[gRates.getNumberOfRates()];
-        
-        for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-            for (int iBeta = 0; iBeta < pi.length; iBeta++) {
-                
-                int zone = flatIndex(iAlpha, iBeta, 0); // region of array corresponding to this combination of iAlpha and iBeta
-                for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-                    logRateConditionals[iRate] = logConditionalMix[zone+iRate];
-                }
-                
-                jointStateProbs[iAlpha][iBeta] = Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL);
-            }// iBeta
-        }// iAlpha
-        
-        if (sanityCheck) {
-            // 1) check sum of conditional probs equals marginal
-            // NB this does not strictly compute the log marginal likelihood, since we omit the 1/nCat term, which cancels in the jointStateProbs
-            double[] logComputedMarginalMix = new double[gRates.getNumberOfRates()]; // marginal likelihoods for each part of the rate mixture model
-            for (int iRate = 0; iRate < gRates.getNumberOfRates(); iRate++) {
-                Count marginalScalingCount = new Count();
-                double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, gRates.getRate(iRate)) ); // not corrected for scaling
-                double logComputedMarginalL = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
-                logComputedMarginalMix[iRate] = logComputedMarginalL;
-            }
-            double logSumComputedMarginalL = Utils.getLnSumComponents(logComputedMarginalMix); 
-           
-            if (logSumComputedMarginalL < logMarginalL-Constants.EPSILON || logSumComputedMarginalL > logMarginalL+Constants.EPSILON)
-                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. logSumComputedMarginalL="+logSumComputedMarginalL+"; logMarginalL="+logMarginalL);
-            
-            //2) having been normalised, check probs sum to 1
-            double sum = 0.0;
-            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
-                    sum += jointStateProbs[iAlpha][iBeta];
-                }
-            }
-            if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
-                throw new RuntimeException("ERROR: Sum of posterior probs != 1.0. sum="+sum);
-        }// sanityCheck
-        
-        // 1/nCat term cancels in when computing jointStateProbs, but must include here
-        double siteMarginalLL = logMarginalL - Math.log(nCat); // marginal over alpha, beta and rate classes (ie total likelihood)
-        return new SiteResult(site, siteMarginalLL, jointStateProbs, threshold, sortByProb, sigDigits);
-    } // analyseSite
-    
-    
-    private int flatIndex(int i, int j, int k){
-        //return iAlpha*pi.length + iBeta + iRate*pi.length*pi.length;
-        return i * pi.length * gRates.getNumberOfRates() + j * gRates.getNumberOfRates() + k;
-    }
-    
-
-    // normal pruning algorithm. Used for computing marginalL in sanity check
-    private double computeTotalL(int site, Count scalingCorrection, double rate){
-        double sum = 0.0;
-        double[] rootConditionals = downTreeMarginal( tree.getRoot(), site, scalingCorrection, rate);
-
-        for (int iRootState = 0; iRootState < pi.length; iRootState++) {
-            sum +=  pi[iRootState] * rootConditionals[iRootState];
-        }
-        return sum;
-    }
-    
-    // part of normal pruning algorithm
-    private double[] downTreeMarginal(Node parent, int site, Count scalingCorrection, double rate){
-        double[] parentConditionals = new double[pi.length];
-
-        if (parent.isLeaf()){ // 'parent' is terminal node, i.e. has no children. Code here is no different from normal pruning algorithm
-
-            String parentName = parent.getIdentifier().getName();
-            int state = alignment.getStateBySequenceName(parentName, site);
-            
-            if (state >= 0 && state < pi.length){ //the observed state is recognised as an amino acid
-                parentConditionals[state] = 1.0;
-            }else  {
-                for (int i = 0; i < parentConditionals.length; i++) {
-                    parentConditionals[i] = 1.0; //observed state is not recognised as amino acid (may be gap). Treated as missing data. All conditional probabilities = 1.0.
-                }
-            }
-        } else{ // NOT LEAF
-    
-            for (int i = 0; i < parentConditionals.length; i++) {
-                parentConditionals[i] = 1.0; // multiplicative identity
-            }
-
-            for (int iChild = 0; iChild < parent.getChildCount(); iChild++){
-                Node child = parent.getChild(iChild);
-
-                double[][] P = new double[pi.length][pi.length];
-                this.model.setDistance(child.getBranchLength() * rate);
-                this.model.getTransitionProbabilities(P);
-
-                double[] childConditionals = downTreeMarginal( parent.getChild(iChild), site, scalingCorrection, rate);
-
-                for (int iParentState = 0; iParentState < pi.length; iParentState++){ // same as normal pruning algorithm
-                    double sum = 0.0; //prob of observing data below this node, if the state at this node were iParentState
-                    for (int jChildState = 0; jChildState < pi.length; jChildState++){
-                        sum += P[iParentState][jChildState] * childConditionals[jChildState];
-
-                    }
-                    parentConditionals[iParentState] *= sum;
-                } // for iParentState
-
-            } // for iChild
-
-        }// else (is not a leaf
-        
-        // scaling conditional likelihoods to prevent underflow errors
-        // find biggest value
-        double biggestValue = 0.0;
-        for (int iParentState = 0; iParentState < pi.length; iParentState++) {
-                biggestValue = Math.max(biggestValue, parentConditionals[iParentState]);
-        }
-        // express conditionals relative to largest value
-        for (int iParentState = 0; iParentState < pi.length; iParentState++) {
-                parentConditionals[iParentState] /= (biggestValue + Constants.TINY_QUANTITY); // The added small value is to prevent divide by zero problems
-        }
-        scalingCorrection.add( Math.log(biggestValue + Constants.TINY_QUANTITY) ); // keep track of the scaling amount as you go
-                                                                                                                                     
-        return parentConditionals;
-    }// downTreeConditional
-    
 
     public void loadData(String alignmentPath, String treePath, Boolean readPhylip) throws ParameterException {
         try{
@@ -494,22 +318,5 @@ public class SubRecon {
         }
 
     }//loadData
-    
-    /*
-        Keeps track of the scalling factor used in the pruning algorithm
-    */
-    private class Count{
-        
-        private double count = 0.0;
-        
-        public void add(double addition){
-            this.count += addition;
-        }
-        
-        public double get(){
-            return this.count;
-        }
-        
-    }// Count class
     
 }
