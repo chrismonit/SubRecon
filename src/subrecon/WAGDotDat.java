@@ -1,11 +1,13 @@
 package subrecon;
 
-import pal.substmodel.WAG;
+import java.io.PrintWriter;
+import pal.substmodel.AminoAcidModel;
+import pal.util.XMLConstants;
 
 
 /**
  * WAG model of amino acid evolution (S. Whelan and N. Goldman 2000)
- * This extension uses the rate and frequencie values found in the 
+ * This implementation uses the rate and frequency values found in the 
  * wag.dat file released with Ziheng Yang's PAML package
  * 
  * Original WAG class:
@@ -15,7 +17,7 @@ import pal.substmodel.WAG;
  * This extension:
  * @author Christopher Monit
  */
-public class WAGDotDat extends WAG
+public class WAGDotDat extends AminoAcidModel implements XMLConstants
 {
     /**
      * constructor
@@ -24,11 +26,26 @@ public class WAGDotDat extends WAG
      */
     public WAGDotDat(double[] f)
     {
-            super(f);
+        super(f);
 
     }
-
-
+    
+    // Get numerical code describing the model type
+    @Override
+    public int getModelID()
+    {
+        return 5;
+    }
+    
+    
+    @Override
+    public void report(PrintWriter out)
+    {
+        out.println("Model of substitution: WAG (Whelan-Goldman 2000) using values found in wag.dat file, released with Ziheng Yang's PAML distribution (ver. 4.9e)");
+        out.println();
+        printFrequencies(out);
+    }
+    
     /**
      * get the frequencies of the original data set that
      * formed the basis for the estimation of the rate matrix
@@ -36,29 +53,43 @@ public class WAGDotDat extends WAG
      * @param f array where amino acid frequencies will be stored
      */
     public static void getOriginalFrequencies(double[] f)
-    {
-        f[0] = 0.086628;
+    { // values found in wag.dat
+        f[0] = 0.0866279;
         f[1] = 0.043972;
-        f[2] = 0.039089;
-        f[3] = 0.057045;
-        f[4] = 0.019308;
-        f[5] = 0.036728;
-        f[6] = 0.058059;
-        f[7] = 0.083252;
-        f[8] = 0.024431;
+        f[2] = 0.0390894;
+        f[3] = 0.0570451;
+        f[4] = 0.0193078;
+        f[5] = 0.0367281;
+        f[6] = 0.0580589;
+        f[7] = 0.0832518;
+        f[8] = 0.0244313;
         f[9] = 0.048466;
         f[10] = 0.086209;
-        f[11] = 0.062029;
-        f[12] = 0.019503;
-        f[13] = 0.038432;
-        f[14] = 0.045763;
-        f[15] = 0.069518;
-        f[16] = 0.061013;
-        f[17] = 0.014386;
-        f[18] = 0.035274;
-        f[19] = 0.070896;
+        f[11] = 0.0620286;
+        f[12] = 0.0195027;
+        f[13] = 0.0384319;
+        f[14] = 0.0457631;
+        f[15] = 0.0695179;
+        f[16] = 0.0610127;
+        f[17] = 0.0143859;
+        f[18] = 0.0352742;
+        f[19] = 0.0708956;
     }
 
+    /**
+     * @return the frequencies of the original data set that
+     * formed the basis for the estimation of the rate matrix
+     */
+    public static double[] getOriginalFrequencies() {
+        double[] f = new double[20];
+        getOriginalFrequencies(f);
+        return f;
+    }
+    
+    @Override
+    public String getUniqueName() {
+        return "wag.dat";
+    }
 
     //
     // Private stuff

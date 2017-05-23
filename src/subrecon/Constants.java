@@ -12,7 +12,8 @@ public class Constants {
     public static final String JTT_ID = "jtt";
     public static final String WAG_ID = "wag";
     public static final String BLOSUM62_ID = "blosum62";
-
+    public static final String WAG_DOT_DAT = "wag.dat";
+    
     public static final double TINY_QUANTITY = 1e-10;
     public static final double EPSILON = 1e-6; // tolerance for sanity checks. Must be larger than TINY_QUANTITY
     

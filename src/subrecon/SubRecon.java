@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -170,16 +171,13 @@ public class SubRecon {
         double shape = comArgs.getShape();
         int nCat = comArgs.getNCat();
         
-        this.pi = comArgs.getFrequencies(); // TODO not sure we need to store these, could just be logged values
-        this.logPi = Utils.getLnValues(pi);
-        
         AminoAcidModel reportModel = null;
         Node root = null;
         
         try{ // check input parameters are ok
             loadData(comArgs.getAlignPath(), comArgs.getTreePath(), comArgs.getPhy());            
             root = this.tree.getRoot();
-            reportModel = getModelInstance(comArgs.getModelID(), pi);
+            reportModel = getModelInstance(comArgs.getModelID(), comArgs.getFrequencies());
             
             if (sigDigits < 1 || sigDigits > 15) 
                 throw new ParameterException("ERROR: -sd (significant digits) argument must be 0 < sd < 16");
@@ -203,6 +201,9 @@ public class SubRecon {
             helpAndExit(jcom, 1);
         }
         
+        this.pi = reportModel.getEquilibriumFrequencies();
+        this.logPi = Utils.getLnValues(pi);
+        
         Node nodeA = root.getChild(0);  
         Node nodeB = root.getChild(1);
 
@@ -219,7 +220,7 @@ public class SubRecon {
             e.printStackTrace();
             System.exit(1);
         }
-        
+
         if (sanityCheck) {
             System.out.println("");
             System.out.println("######### sanityCheck == true #########");
@@ -265,6 +266,8 @@ public class SubRecon {
                 model = new WAG(WAG.getOriginalFrequencies());
             }else if (modelArgument.equals(Constants.BLOSUM62_ID)){
                 model = new BLOSUM62(BLOSUM62.getOriginalFrequencies());
+            }else if (modelArgument.equals(Constants.WAG_DOT_DAT)){
+                model = new WAGDotDat(WAGDotDat.getOriginalFrequencies());
             }else{
                 throw new ParameterException("ERROR: Model identifier not recognised");
             }            
@@ -277,6 +280,8 @@ public class SubRecon {
                 model = new WAG(frequencies);
             }else if (modelArgument.equals(Constants.BLOSUM62_ID)){
                 model = new BLOSUM62(frequencies);
+            }else if (modelArgument.equals(Constants.WAG_DOT_DAT)){
+                model = new WAGDotDat(frequencies);
             }else{
                 throw new ParameterException("ERROR: Model identifier not recognised");
             }             
