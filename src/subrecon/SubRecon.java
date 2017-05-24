@@ -22,6 +22,7 @@ import pal.substmodel.BLOSUM62;
 import pal.substmodel.Dayhoff;
 import pal.substmodel.GammaRates;
 import pal.substmodel.JTT;
+import pal.substmodel.RateDistribution;
 import pal.substmodel.WAG;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
@@ -70,7 +71,7 @@ public class SubRecon {
     private boolean verbose;
     private int sigDigits;
     
-    private GammaRates gRates;
+    private RateDistribution gRates;
     
     private CommandArgs comArgs;
     
