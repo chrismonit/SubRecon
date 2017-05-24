@@ -156,5 +156,29 @@ public class CommandArgs {
     }
     
     
+    @Parameter(names = {"-rates"}, required = false, description = "For testing only: explicit values for rate distribution")
+    private String rateArgument;
+    
+    private double[] rateValues;
+    
+    public double[] getRates(){  
+        
+        if (rateValues != null) { 
+            return rateValues; // this method has been called already, so do not need to repeat conversion of string
+        }
+        
+        if (rateArgument == null) {
+            return null; // user has not provided rates on the CLI
+        }
+                
+        String[] rateStrings = rateArgument.split(",");
+
+        this.rateValues = new double[rateStrings.length];
+        for (int i = 0; i < rateValues.length; i++) {
+            rateValues[i] = Double.parseDouble(rateStrings[i]);
+        }
+        
+        return rateValues;
+    }
     
 }

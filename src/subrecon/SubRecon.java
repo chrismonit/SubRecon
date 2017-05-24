@@ -207,8 +207,11 @@ public class SubRecon {
         Node nodeA = root.getChild(0);  
         Node nodeB = root.getChild(1);
 
-        rateDist = new GammaRates(nCat, shape);        
-        //rateDist = new CustomRates(new double[]{0.014673077, 0.105978735, 0.307303694, 0.671510234, 1.356165608, 3.544368651});
+        if (comArgs.getRates() != null) {
+            rateDist = new CustomRates(comArgs.getRates());
+        }else{
+            rateDist = new GammaRates(nCat, shape);        
+        }
         
         // TODO need to print some intro information, including citation
         
