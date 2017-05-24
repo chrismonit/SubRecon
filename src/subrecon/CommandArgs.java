@@ -57,25 +57,32 @@ public class CommandArgs {
 
     // we assume in most cases the user will want to provide their own frequencies
     @Parameter(names = {"-frequencies", "-pi"}, required = false, description = "Equilibrium frequencies for amino acids, delimited by comma in order: A,R,N,D,C,Q,E,G,H,I,L,K,M,F,P,S,T,W,Y,V. (Use model's original estimated frequencies by default)")
-    private String piString;
+    private String piArgument;
+    
+    private double[] piValues;
     
     public double[] getFrequencies(){  
-        if (piString == null) {
-            return null;
+        
+        if (piValues != null) { 
+            return piValues; // this method has been called already, so do not need to repeat conversion of string
         }
         
+        if (piArgument == null) {
+            return null; // user has not provided frequencies on the CLI
+        }
+                
         double sum = 0.0;
-        String[] piStrings = piString.split(",");
+        String[] piStrings = piArgument.split(",");
         
         if (piStrings.length != 20) {
             System.out.println("Error: if specifying amino acid frequencies, exactly 20 values must be provided and delimited by comma with no spaces");
             System.exit(1);
         }
         
-        double[] pi = new double[piStrings.length];
-        for (int i = 0; i < pi.length; i++) {
-            pi[i] = Double.parseDouble(piStrings[i]);
-            sum += pi[i];
+        this.piValues = new double[piStrings.length];
+        for (int i = 0; i < piValues.length; i++) {
+            piValues[i] = Double.parseDouble(piStrings[i]);
+            sum += piValues[i];
         }
         
         if ( sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON ) {
@@ -83,11 +90,12 @@ public class CommandArgs {
         }
         
         // normalise them anyway, because the PAL amino acid substitution models don't
-        for (int i = 0; i < pi.length; i++) {
-            pi[i] /= sum;
+        for (int i = 0; i < piValues.length; i++) {
+            piValues[i] /= sum;
         }
         
-        return pi;
+        
+        return piValues;
     }
     
     // other options
@@ -146,4 +154,7 @@ public class CommandArgs {
     public int getNThreads(){
         return nThreads; // user can give site number in non-zero based
     }
+    
+    
+    
 }

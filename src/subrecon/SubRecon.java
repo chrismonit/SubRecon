@@ -71,7 +71,7 @@ public class SubRecon {
     private boolean verbose;
     private int sigDigits;
     
-    private RateDistribution gRates;
+    private RateDistribution rateDist;
     
     private CommandArgs comArgs;
     
@@ -87,7 +87,7 @@ public class SubRecon {
         
         this.init(args);
         if (site > -1) { // a single site to analyse
-            SiteResult result = new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, gRates, threshold, sigDigits, sortByProb, sanityCheck, site).call();
+            SiteResult result = new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, rateDist, threshold, sigDigits, sortByProb, sanityCheck, site).call();
             System.out.println(result);
         }else{
             // run analyses
@@ -96,8 +96,7 @@ public class SubRecon {
             
             List<Future<SiteResult>> siteResults = new ArrayList<Future<SiteResult>>();
             for (int iSite = 0; iSite < alignment.getLength(); iSite++) {
-                Future<SiteResult> siteResult = threadPool.submit(
-                        new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, gRates, threshold, sigDigits, sortByProb, sanityCheck, iSite  )
+                Future<SiteResult> siteResult = threadPool.submit(new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, rateDist, threshold, sigDigits, sortByProb, sanityCheck, iSite  )
                 );// submit
                 siteResults.add(siteResult);
             }// for iSite
@@ -208,14 +207,15 @@ public class SubRecon {
         Node nodeA = root.getChild(0);  
         Node nodeB = root.getChild(1);
 
-        gRates = new GammaRates(nCat, shape);        
+        rateDist = new GammaRates(nCat, shape);        
+        //rateDist = new CustomRates(new double[]{0.014673077, 0.105978735, 0.307303694, 0.671510234, 1.356165608, 3.544368651});
         
         // TODO need to print some intro information, including citation
         
         try{
             PrintWriter writer = new PrintWriter(System.out);
             reportModel.report(writer);
-            gRates.report(writer);
+            rateDist.report(writer);
             writer.flush();
         }catch(Exception e){
             e.printStackTrace();
