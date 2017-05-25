@@ -115,11 +115,11 @@ public class SubRecon {
                 try{
                     result = siteResults.get(iSite).get();
                 }catch(InterruptedException e){
-                    System.out.println("ERROR: Site "+(iSite+1));
+                    System.out.printf("ERROR: Site %d%n", (iSite+1));
                     e.printStackTrace();
                     continue;
                 }catch(ExecutionException e){
-                    System.out.println("ERROR: Site "+(iSite+1));
+                    System.out.printf("ERROR: Site %d%n", (iSite+1));
                     e.printStackTrace();
                     continue;
                 }
@@ -130,15 +130,15 @@ public class SubRecon {
                     System.out.println(result);
                 }// else print nothing                
             }// for iSite
-            System.out.println("Total lnL: "+totalLnL);
+            System.out.printf("Total lnL: %.10f%n", totalLnL);
 
             if (!interestingSite) { // produce output if no sites are deemed interesting, to avoid confusion
                 System.out.println("0 sites have non-identical substitution probabilities greater than threshold value");
-                System.out.println("Threshold="+threshold);
+                System.out.printf("Threshold=%.5f%n", threshold);
                 System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
             }// if
             long duration = System.currentTimeMillis() - start;
-            System.out.println("duration: "+(duration/1000) + " s");
+            System.out.printf("Duration: %d s (%d ms)%n", (duration/1000), duration);
         }// else (analysing all sites)
         
     }// run
@@ -155,7 +155,7 @@ public class SubRecon {
             jcom.parse(args);
         }
         catch(ParameterException ex){
-            System.out.println("ERROR: " + ex.getMessage());
+            System.out.printf("ERROR: %s%n", ex.getMessage());
             helpAndExit(jcom, 1);
         }
         
@@ -234,15 +234,15 @@ public class SubRecon {
         }
         
         System.out.println("");
-        System.out.println("Using "+nThreads+" thread(s)");
+        System.out.printf("Using %x thread(s)%n", nThreads);
         System.out.println("");
         
         System.out.println("------------------------------------------------------------");
         System.out.println("Joint reconstructions are presented in the form [ab:x],");
         System.out.println("meaning x is the joint probability of residue [a] being");
-        System.out.println("present at node [A] and state [b] being present at node [B].");
-        System.out.println("Node [A] is has "+NodeUtils.getLeafCount(nodeA)+" tips and contains taxon "+getSingleTerminalNode(nodeA).getIdentifier().getName()+".");
-        System.out.println("Node [B] is has "+NodeUtils.getLeafCount(nodeB)+" tips and contains taxon "+getSingleTerminalNode(nodeB).getIdentifier().getName()+".");
+        System.out.println("present at node [A] and state [b] being present at node [B].");        
+        System.out.printf("Node [A] is has %d tips and contains taxon %s.%n", NodeUtils.getLeafCount(nodeA), getSingleTerminalNode(nodeA).getIdentifier().getName());
+        System.out.printf("Node [B] is has %d tips and contains taxon %s.%n", NodeUtils.getLeafCount(nodeB), getSingleTerminalNode(nodeB).getIdentifier().getName());
         System.out.println("------------------------------------------------------------");
         
         System.out.println(SiteResult.getHeader());
