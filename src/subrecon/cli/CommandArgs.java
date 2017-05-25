@@ -1,6 +1,7 @@
-package subrecon;
+package subrecon.cli;
 
 import com.beust.jcommander.Parameter;
+import subrecon.Constants;
 
 /**
  *

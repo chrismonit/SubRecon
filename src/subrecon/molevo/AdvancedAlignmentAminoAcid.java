@@ -1,4 +1,4 @@
-package subrecon;
+package subrecon.molevo;
 
 import pal.alignment.Alignment;
 import pal.alignment.SimpleAlignment;

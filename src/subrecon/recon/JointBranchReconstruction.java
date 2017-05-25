@@ -3,13 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package subrecon;
+package subrecon.recon;
 
 import java.util.concurrent.Callable;
 import pal.substmodel.AminoAcidModel;
 import pal.substmodel.RateDistribution;
 import pal.tree.Node;
 import pal.tree.Tree;
+import subrecon.molevo.AdvancedAlignmentAminoAcid;
+import subrecon.Constants;
+import subrecon.utils.Utils;
 
 /**
  *

@@ -1,4 +1,4 @@
-package subrecon;
+package subrecon.molevo;
 
 import java.io.PrintWriter;
 import pal.substmodel.AminoAcidModel;

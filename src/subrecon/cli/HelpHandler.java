@@ -1,4 +1,4 @@
-package subrecon;
+package subrecon.cli;
 
 import com.beust.jcommander.JCommander;
 

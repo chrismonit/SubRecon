@@ -3,10 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package subrecon;
+package subrecon.molevo;
 
 import java.io.PrintWriter;
 import pal.substmodel.RateDistribution;
+import subrecon.Constants;
 
 /**
  *
