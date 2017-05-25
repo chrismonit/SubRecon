@@ -28,6 +28,7 @@ public class JointBranchReconstruction implements Callable {
     private boolean sanityCheck;
     private double[] pi; // TODO may want to only store logged pi, save memory
     private double[] logPi;
+    private double logNCat;
     private RateDistribution rateDist;
     private int site;
     
@@ -57,13 +58,19 @@ public class JointBranchReconstruction implements Callable {
         
         this.pi = pi;
         this.logPi = logPi;// TODO only need to pass in logPi (will need to convert some code below though)
+        this.logNCat = Math.log(this.rateDist.getNumberOfRates());
         
         this.site = site;
     }
     
+    // Callable interface
     @Override
     public SiteResult call(){
-        double[] logConditionalMix = new double[pi.length * pi.length * rateDist.getNumberOfRates()]; 
+        return recon();
+    }
+    
+    public SiteResult recon(){
+        double[] logConditionalMix = new double[logPi.length * logPi.length * rateDist.getNumberOfRates()]; 
         //double sumJointStateProbs = 0.0; // will equal the total likelihood for this site, not conditional on states or rate class
         
         for (int iRate = 0; iRate < rateDist.getNumberOfRates(); iRate++) {
@@ -81,13 +88,13 @@ public class JointBranchReconstruction implements Callable {
             
             model.setDistance((nodeA.getBranchLength() + nodeB.getBranchLength()) * rate);
 
-            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
+            for (int iAlpha = 0; iAlpha < logPi.length; iAlpha++) {
 
-                double logAlphaTerms = logPi[iAlpha] + logAlphaConditionals[iAlpha]; // NB could store log pi values
+                double logAlphaTerms = logPi[iAlpha] + logAlphaConditionals[iAlpha];
 
-                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
+                for (int iBeta = 0; iBeta < logPi.length; iBeta++) {
                     
-                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iBeta)) + logBetaConditionals[iBeta]; // could log both conditionals AND transition probs in advance
+                    double logScaledConditionalL = logAlphaTerms + Math.log(model.getTransitionProbability(iAlpha, iBeta)) + logBetaConditionals[iBeta];
                     double logConditionalL = logScaledConditionalL + logScalingCorrection;
                     logConditionalMix[flatIndex(iAlpha,iBeta,iRate)] = logConditionalL; // contribution from this rate class
                 }// iBeta
@@ -98,11 +105,11 @@ public class JointBranchReconstruction implements Callable {
         double logMarginalL = Utils.getLnSumComponents(logConditionalMix); // NB this is not really the marginalLL, since we've not multiplied by 1/nCat
         
         // compute the joint probabilities we're actually interested in, by summing over rate classes
-        double[][] jointStateProbs = new double[pi.length][pi.length]; // NB this certainly needs to be a new instance
+        double[][] jointStateProbs = new double[logPi.length][logPi.length]; // NB this certainly needs to be a new array instance, because it is passed to SiteResult instance
         double[] logRateConditionals = new double[rateDist.getNumberOfRates()];
         
-        for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-            for (int iBeta = 0; iBeta < pi.length; iBeta++) {
+        for (int iAlpha = 0; iAlpha < logPi.length; iAlpha++) {
+            for (int iBeta = 0; iBeta < logPi.length; iBeta++) {
                 
                 int zone = flatIndex(iAlpha, iBeta, 0); // region of array corresponding to this combination of iAlpha and iBeta
                 for (int iRate = 0; iRate < rateDist.getNumberOfRates(); iRate++) {
@@ -130,8 +137,8 @@ public class JointBranchReconstruction implements Callable {
             
             //2) having been normalised, check probs sum to 1
             double sum = 0.0;
-            for (int iAlpha = 0; iAlpha < pi.length; iAlpha++) {
-                for (int iBeta = 0; iBeta < pi.length; iBeta++) {
+            for (int iAlpha = 0; iAlpha < logPi.length; iAlpha++) {
+                for (int iBeta = 0; iBeta < logPi.length; iBeta++) {
                     sum += jointStateProbs[iAlpha][iBeta];
                 }
             }
@@ -140,7 +147,7 @@ public class JointBranchReconstruction implements Callable {
         }// sanityCheck
         
         // 1/nCat term cancels in when computing jointStateProbs, but must include here
-        double siteMarginalLL = logMarginalL - Math.log(rateDist.getNumberOfRates()); // marginal over alpha, beta and rate classes (ie total likelihood)
+        double siteMarginalLL = logMarginalL - logNCat; // marginal over alpha, beta and rate classes (ie total likelihood)
         return new SiteResult(site, siteMarginalLL, jointStateProbs, threshold, sortByProb, sigDigits);
     } // analyseSite
     
