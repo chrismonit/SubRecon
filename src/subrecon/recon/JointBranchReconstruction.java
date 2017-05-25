@@ -102,7 +102,7 @@ public class JointBranchReconstruction implements Callable {
             
         } // for iRate
                 
-        double logMarginalL = Utils.getLnSumComponents(logConditionalMix); // NB this is not really the marginalLL, since we've not multiplied by 1/nCat
+        double logSumConditionals = Utils.getLnSumComponents(logConditionalMix); // sum of conditional probs, ie sum over alpha, beta and rate classes (not strictly marginal L, as we've not multiplied by 1/nCat)
         
         // compute the joint probabilities we're actually interested in, by summing over rate classes
         double[][] jointStateProbs = new double[logPi.length][logPi.length]; // NB this certainly needs to be a new array instance, because it is passed to SiteResult instance
@@ -116,40 +116,44 @@ public class JointBranchReconstruction implements Callable {
                     logRateConditionals[iRate] = logConditionalMix[zone+iRate];
                 }
                 
-                jointStateProbs[iAlpha][iBeta] = Math.exp(Utils.getLnSumComponents(logRateConditionals) - logMarginalL);
+                jointStateProbs[iAlpha][iBeta] = Math.exp(Utils.getLnSumComponents(logRateConditionals) - logSumConditionals);
             }// iBeta
         }// iAlpha
         
         if (sanityCheck) {
-            // 1) check sum of conditional probs equals marginal
-            // NB this does not strictly compute the log marginal likelihood, since we omit the 1/nCat term, which cancels in the jointStateProbs
-            double[] logComputedMarginalMix = new double[rateDist.getNumberOfRates()]; // marginal likelihoods for each part of the rate mixture model
-            for (int iRate = 0; iRate < rateDist.getNumberOfRates(); iRate++) {
-                Count marginalScalingCount = new Count();
-                double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, rateDist.getRate(iRate)) ); // not corrected for scaling
-                double logComputedMarginalL = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
-                logComputedMarginalMix[iRate] = logComputedMarginalL;
-            }
-            double logSumComputedMarginalL = Utils.getLnSumComponents(logComputedMarginalMix); 
-           
-            if (logSumComputedMarginalL < logMarginalL-Constants.EPSILON || logSumComputedMarginalL > logMarginalL+Constants.EPSILON)
-                throw new RuntimeException("ERROR: Sum of conditional Ls and marginal L not equal. logSumComputedMarginalL="+logSumComputedMarginalL+"; logMarginalL="+logMarginalL);
-            
-            //2) having been normalised, check probs sum to 1
-            double sum = 0.0;
-            for (int iAlpha = 0; iAlpha < logPi.length; iAlpha++) {
-                for (int iBeta = 0; iBeta < logPi.length; iBeta++) {
-                    sum += jointStateProbs[iAlpha][iBeta];
-                }
-            }
-            if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
-                throw new RuntimeException("ERROR: Sum of posterior probs != 1.0. sum="+sum);
+            checkConditionalsSumToMarginal(logSumConditionals);
+            checkSumToOne(jointStateProbs);
         }// sanityCheck
         
-        // 1/nCat term cancels in when computing jointStateProbs, but must include here
-        double siteMarginalLL = logMarginalL - logNCat; // marginal over alpha, beta and rate classes (ie total likelihood)
+        double siteMarginalLL = logSumConditionals - logNCat; // marginal over alpha, beta and rate classes (ie total site likelihood). 1/nCat term cancels in when computing jointStateProbs, but must include here
         return new SiteResult(site, siteMarginalLL, jointStateProbs, threshold, sortByProb, sigDigits);
     } // analyseSite
+    
+    private void checkConditionalsSumToMarginal(double logSumConditionals){
+        // NB this does not strictly compute the log marginal likelihood, since we omit the 1/nCat term, which cancels in the jointStateProbs
+        double[] logComputedMarginalMix = new double[rateDist.getNumberOfRates()]; // marginal likelihoods for each part of the rate mixture model
+        for (int iRate = 0; iRate < rateDist.getNumberOfRates(); iRate++) {
+            Count marginalScalingCount = new Count();
+            double logScaledMarginalL = Math.log( computeTotalL(site, marginalScalingCount, rateDist.getRate(iRate)) ); // not corrected for scaling
+            logComputedMarginalMix[iRate] = logScaledMarginalL + marginalScalingCount.get(); // correcting for scaling
+        }
+        double logSumComputedMarginalL = Utils.getLnSumComponents(logComputedMarginalMix); 
+
+        if (logSumComputedMarginalL < logSumConditionals-Constants.EPSILON || logSumComputedMarginalL > logSumConditionals+Constants.EPSILON)
+            throw new RuntimeException("ERROR: Failed sanity check. Sum of conditional Ls and marginal L not equal. logSumComputedMarginalL="+logSumComputedMarginalL+"; logMarginalL="+logSumConditionals);
+    }
+        
+    
+    private void checkSumToOne(double[][] jointStateProbs){ // these values will not be logged
+        double sum = 0.0;
+        for (int iAlpha = 0; iAlpha < logPi.length; iAlpha++) {
+            for (int iBeta = 0; iBeta < logPi.length; iBeta++) {
+                sum += jointStateProbs[iAlpha][iBeta];
+            }
+        }
+        if (sum < 1.0-Constants.EPSILON || sum > 1.0+Constants.EPSILON)
+            throw new RuntimeException("ERROR: Failed sanity check. Sum of posterior probs != 1.0. sum="+sum);
+    }
     
     
     private int flatIndex(int i, int j, int k){
