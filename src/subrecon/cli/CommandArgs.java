@@ -149,7 +149,7 @@ public class CommandArgs {
         return sigDigits;
     }
     
-    @Parameter(names = {"-threats", "-T"}, required = false, description = "Number of threads to use (usually the number of spare CPUs on the machine)")
+    @Parameter(names = {"-threads", "-T"}, required = false, description = "Number of threads to use (usually the number of spare CPUs on the machine)")
     private int nThreads = 1;
     
     public int getNThreads(){
