@@ -49,7 +49,7 @@ public class CommandArgs {
         return shape;
     }
     
-    @Parameter(names = {"-numbercategories", "-n"}, required = true, description = "Number of rate catergories for gamma distribution of substitution rates")
+    @Parameter(names = {"-rateclasses", "-k"}, required = true, description = "Number of rate catergories for gamma distribution of substitution rates")
     private int nCat = 1;
         
     public int getNCat(){
