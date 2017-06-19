@@ -62,13 +62,6 @@ public class SubRecon {
 
     private int site;
     
-    //private Node root;
-    //private Node nodeA;
-    //private Node nodeB;
-    
-    //private double shape; // shape parameter for gamma dist (alpha)
-    //private int nCat; // rate categories for gamma dist
-    
     private boolean sortByProb; // sort by value for output
     private double threshold; // minimum transition probability for printing 
     private boolean verbose;
@@ -94,7 +87,7 @@ public class SubRecon {
             System.out.println(result);
         }else{
             // run analyses
-            long start = System.currentTimeMillis();
+            //long start = System.currentTimeMillis();
             ExecutorService threadPool = Executors.newFixedThreadPool(nThreads);        
             
             List<Future<SiteResult>> siteResults = new ArrayList<Future<SiteResult>>();
@@ -137,8 +130,8 @@ public class SubRecon {
                 System.out.printf("Threshold=%.5f%n", threshold);
                 System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
             }// if
-            long duration = System.currentTimeMillis() - start;
-            System.out.printf("Duration: %d s (%d ms)%n", (duration/1000), duration);
+            //long duration = System.currentTimeMillis() - start;
+            //System.out.printf("Duration: %d s (%d ms)%n", (duration/1000), duration);
         }// else (analysing all sites)
         
     }// run
@@ -237,13 +230,13 @@ public class SubRecon {
         System.out.printf("Using %x thread(s)%n", nThreads);
         System.out.println("");
         
-        System.out.println("------------------------------------------------------------");
-        System.out.println("Joint reconstructions are presented in the form [ab:x],");
-        System.out.println("meaning x is the joint probability of residue [a] being");
-        System.out.println("present at node [A] and state [b] being present at node [B].");        
-        System.out.printf("Node [A] is has %d tips and contains taxon %s.%n", NodeUtils.getLeafCount(nodeA), getSingleTerminalNode(nodeA).getIdentifier().getName());
-        System.out.printf("Node [B] is has %d tips and contains taxon %s.%n", NodeUtils.getLeafCount(nodeB), getSingleTerminalNode(nodeB).getIdentifier().getName());
-        System.out.println("------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------");
+        System.out.println("Reconstruction probabilities are presented in the form [ab:x],");
+        System.out.println("meaning x is the joint probability of residue [a] being       ");
+        System.out.println("present at node [A] and residue [b] being present at node [B].");        
+        System.out.printf( "Node [A] has %d tips and contains taxon %s.%n", NodeUtils.getLeafCount(nodeA), getSingleTerminalNode(nodeA).getIdentifier().getName());
+        System.out.printf( "Node [B] has %d tips and contains taxon %s.%n", NodeUtils.getLeafCount(nodeB), getSingleTerminalNode(nodeB).getIdentifier().getName());
+        System.out.println("--------------------------------------------------------------");
         
         System.out.println(SiteResult.getHeader());
                 
