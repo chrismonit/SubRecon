@@ -128,7 +128,7 @@ public class CommandArgs {
         return threshold;
     }
 
-    @Parameter(names = {"-verbose", "-v"}, required = false, description = "Print results for all sites, including those where Prob(I->I) >= 1 - [threshold] (these are omitted by default)")
+    @Parameter(names = {"-verbose", "-v"}, required = false, description = "Print results for all sites, including those where Prob(A=a,B=b|D,θ,α) >= 1 - [threshold] where a==b (these are omitted by default)")
     private boolean verbose = false;
     
     public boolean getVerbose(){
