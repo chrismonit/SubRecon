@@ -95,7 +95,7 @@ public class SiteResult {
     }
     
     public static String getHeader(){
-        return String.join(Constants.DELIM, new String[]{"[HEADER]", "site", "ln[P(D|θ,α)]", "P(A=a,B=b|D,θ,α)"});
+        return String.join(Constants.DELIM, new String[]{"[HEADER]", "site", "ln[P(D|theta,alpha)]", "P(A=a,B=b|D,theta,alpha)"});
     }
     
     @Override
