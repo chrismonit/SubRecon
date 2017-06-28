@@ -1,0 +1,12 @@
+-s
+prot.lysozymeLarge.fasta
+-t
+root.lysozymeLarge.raxml.wagf.tre
+-m
+wag
+-a
+0.5
+-k
+4
+-T
+3
