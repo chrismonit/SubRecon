@@ -120,3 +120,20 @@ E.g.
 	$ java -jar SubRecon.jar -s aln -t tree -m wag -k 4 -a 0.5 -threshold 0.0 -nosort -verbose
 
 This will print all 20x20=400 substitution probabilities, in canonical amino acid order, for all sites.
+
+LICENSE
+
+SubRecon is distributed under the Apache License version 2.0.
+
+It uses libraries:
+	jCommander 
+		http://jcommander.org/
+		Copyright 2010 Cedric Beust cedric@beust.com
+		Apache License version 2.0
+	
+	Phylogenetic Analysis Library
+		http://en.bio-soft.net/tree/PAL.html
+		Copyright 1999-2001 PAL Development Core Team
+  		Lesser GNU General Public License (LGPL): see SubRecon/lib/LGPL.txt and SubRecon/lib/GPL.txt
+
+It is possible to recompile these libraries as JARs placed SubRecon/lib/ and SubRecon can be recombiled to include library modifications.
