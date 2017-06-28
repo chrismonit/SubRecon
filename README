@@ -8,8 +8,11 @@ Please cite Christopher Monit and Richard A. Goldstein, manuscript in preparatio
 
 INSTALLATION
 
+Requires Java v1.8 or higher to run, Java Development Kit v1.8 or higher to compile.
+
 First clone or download this git repository and then compile using Apache Ant (http://ant.apache.org/).
 
+e.g. on Unix/Linux system:
 $ cd SubRecon-master
 $ ant
 $ ls dist/
@@ -120,6 +123,12 @@ E.g.
 	$ java -jar SubRecon.jar -s aln -t tree -m wag -k 4 -a 0.5 -threshold 0.0 -nosort -verbose
 
 This will print all 20x20=400 substitution probabilities, in canonical amino acid order, for all sites.
+
+EXAMPLE
+
+SubRecon/example includes an example dataset of primate lysozyme, described by Messier and Stewart (1997) Nature 385(6612):151–154 and distributed with PAML 4.9e by Yang (2007) Mol. Bio. Evo. 24(8):1586–91.
+
+Tree estimated with RAxML 8, using WAG model. Rooted on branch of interest: that leading to the Colobinae.
 
 LICENSE
 
