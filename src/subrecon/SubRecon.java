@@ -224,8 +224,8 @@ public class SubRecon {
             rateDist = new GammaRates(nCat, shape);        
         }
         
-        System.out.println("SubRecon: Ancestral Reconstruction at Adjacent Nodes in a Phylogeny");
-        System.out.println("Please cite: C. Monit and R. A. Goldstein, manuscript in preparation");
+        System.out.println("SubRecon: Ancestral Reconstruction of Amino Acid Substitutions Along a Branch in a Phylogeny");
+        System.out.println("Please cite: C. Monit and R. A. Goldstein, submitted");
         System.out.println("");
         
         try{

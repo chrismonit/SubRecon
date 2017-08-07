@@ -30,8 +30,8 @@ public class HelpHandler {
     public void printSynopsis(){
         System.out.println("");
         System.out.println("Synopsis:");
-        System.out.println("\"SubRecon: Ancestral Reconstruction at Adjacent Nodes in a Phylogeny\"");
-        System.out.println("Please cite:  Christopher Monit and Richard A. Goldstein, manuscript in preparation");
+        System.out.println("\"SubRecon: Ancestral Reconstruction of Amino Acid Substitutions Along a Branch in a Phylogeny\"");
+        System.out.println("Please cite:  Christopher Monit and Richard A. Goldstein, submitted");
         System.out.println("");
     }
     
