@@ -244,7 +244,7 @@ public class SubRecon {
         }
         
         System.out.println("");
-        System.out.printf("Using %x thread(s)%n", nThreads);
+        System.out.printf("Using %d thread(s)%n", nThreads);
         System.out.println("");
         
         System.out.println("--------------------------------------------------------------");
