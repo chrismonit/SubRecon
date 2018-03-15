@@ -165,10 +165,15 @@ public class SubRecon {
             jcom.parse(args);
         }
         catch(ParameterException ex){
-            System.out.printf("ERROR: %s%n", ex.getMessage());
-            helpAndExit(jcom, 1);
+            // exception will be thrown even if -h used legitimately, because compulsary options (e.g. -m) may not have been given
+            if (comArgs.getShowHelp()) {
+                helpAndExit(jcom, 0);
+            }else{
+                System.out.printf("ERROR: %s%n", ex.getMessage());
+                helpAndExit(jcom, 1);
+            }
         }
-        
+
         if (comArgs.getShowHelp()) {
             helpAndExit(jcom, 0);
         }
@@ -227,7 +232,8 @@ public class SubRecon {
         }
         
         System.out.println("SubRecon: Ancestral Reconstruction of Amino Acid Substitutions Along a Branch in a Phylogeny");
-        System.out.println("Please cite: C. Monit and R. A. Goldstein, submitted");
+        System.out.println("");
+        System.out.println("Please cite: Christopher Monit and Richard A. Goldstein (2018) Bioinformatics. DOI: 10.1093/bioinformatics/bty101");
         System.out.println("");
         
         try{

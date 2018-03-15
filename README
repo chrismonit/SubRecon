@@ -62,7 +62,7 @@ OPTIONS
 		Number of threads to use (usually the number of spare CPUs on the machine)
 	-threshold
        		Minimum probability value for a substitution to be displayed 
-		(Default is 0.01. NB '-threshold 0.0' will print all 400 possibilities)
+		(Default is 0.5. NB '-threshold 0.0' will print all 400 possibilities)
 	-nosort
        		Do NOT sort transition probabilities in descending order, but by amino acid canonical order instead
 	-sd

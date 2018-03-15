@@ -31,7 +31,7 @@ public class HelpHandler {
         System.out.println("");
         System.out.println("Synopsis:");
         System.out.println("\"SubRecon: Ancestral Reconstruction of Amino Acid Substitutions Along a Branch in a Phylogeny\"");
-        System.out.println("Please cite:  Christopher Monit and Richard A. Goldstein, submitted");
+        System.out.println("Please cite:  Christopher Monit and Richard A. Goldstein (2018) Bioinformatics. DOI: 10.1093/bioinformatics/bty101");
         System.out.println("");
     }
     
