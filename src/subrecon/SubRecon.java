@@ -96,13 +96,16 @@ public class SubRecon {
     
     public void run(String[] args){
         
+        //long start = System.currentTimeMillis();
         this.init(args);
-        if (site > -1) { // a single site to analyse
+        boolean printingSites = false;
+        if (site > -1) { // analysing a single site
             SiteResult result = new JointBranchReconstruction(alignment, tree, getModelInstance(comArgs.getModelID(), pi), pi, logPi, rateDist, threshold, sigDigits, sortByProb, sanityCheck, site).call();
-            System.out.println(result);
+            if (verbose || (result.getMaxIIProb() <= 1.-threshold && result.getMaxProb() >= threshold)) { // print if highest prob substitution is NOT I->I *and* if that sub has prob >= threshold
+                printingSites = true; // at least one site has result to be printed
+                System.out.println(result);
+            }
         }else{
-            // run analyses
-            //long start = System.currentTimeMillis();
             ExecutorService threadPool = Executors.newFixedThreadPool(nThreads);        
             
             List<Future<SiteResult>> siteResults = new ArrayList<Future<SiteResult>>();
@@ -116,7 +119,6 @@ public class SubRecon {
             
             
             // print results
-            boolean interestingSite = false;
             double totalLnL = 0.0; // across sites
             for (int iSite = 0; iSite < siteResults.size(); iSite++) {
                 SiteResult result = null;
@@ -131,24 +133,24 @@ public class SubRecon {
                     e.printStackTrace();
                     continue;
                 }
-                
+
                 totalLnL += result.getMarginalLnL();
-                if (verbose || result.getMaxIIProb() <= 1.-threshold) {
-                    interestingSite = true; // at least one site has result to be printed
+                if (verbose || (result.getMaxIIProb() <= 1.-threshold && result.getMaxProb() >= threshold)) { // result is interesting if the highest prob substitution is NOT I->I *and* if that substitution has prob above threshold
+                    printingSites = true; // at least one site has result to be printed
                     System.out.println(result);
-                }// else print nothing                
+                }
             }// for iSite
             System.out.printf("Total lnL: %.10f%n", totalLnL);
 
-            if (!interestingSite) { // produce output if no sites are deemed interesting, to avoid confusion
-                System.out.println("0 sites have non-identical substitution probabilities greater than threshold value");
-                System.out.printf("Threshold=%.5f%n", threshold);
-                System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
-            }// if
-            //long duration = System.currentTimeMillis() - start;
-            //System.out.printf("Duration: %d s (%d ms)%n", (duration/1000), duration);
         }// else (analysing all sites)
-        
+
+        if (!printingSites) { // produce output if no sites are deemed interesting, to avoid confusion
+            System.out.printf("0 sites have non-identical substitution probabilities greater than threshold value (threshold=%.5f)%n", threshold);
+            System.out.println("The options -threshold, -nosort and -verbose can be used to control output detail");
+        }// if
+        //long duration = System.currentTimeMillis() - start;
+        //System.out.printf("Duration: %d s (%d ms)%n", (duration/1000), duration);
+
     }// run
     
     

@@ -37,6 +37,7 @@ public class SiteResult {
     private AminoAcids aa;
     
     private double maxIIProb; // branchProb[i][j] where i==j
+    private double maxProb;
     
     private int sigDigits;
     
@@ -60,6 +61,7 @@ public class SiteResult {
         
         this.aa = AminoAcids.DEFAULT_INSTANCE;
         
+        this.maxProb = -1.;
         this.maxIIProb = -1.;
         this.sigDigits = sigDigits;
         // save the reisdue pairs with high probabilities
@@ -70,6 +72,7 @@ public class SiteResult {
                 if (i==j) {
                     this.maxIIProb = Math.max(maxIIProb, branchProbs[i][j]);
                 }
+                this.maxProb = Math.max(maxProb, branchProbs[i][j]);
                 
                 if (branchProbs[i][j] >= threshold) {
                     aboveThreshProbs.add(branchProbs[i][j]);
@@ -108,7 +111,11 @@ public class SiteResult {
     public double getMaxIIProb(){
         return maxIIProb;
     }
-    
+
+    public double getMaxProb(){
+        return maxProb;
+    }
+
     public static String getHeader(){
         return String.join(Constants.DELIM, new String[]{"[HEADER]", "site", "ln[P(D|theta,alpha)]", "P(A=a,B=b|D,theta,alpha)"});
     }
