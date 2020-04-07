@@ -11,6 +11,13 @@ Details are given in the following paper. Please cite this if you use SubRecon o
 > reconstruction of amino acid substitutions along a branch in a
 > phylogeny. *Bioinformatics*. DOI: 10.1093/bioinformatics/bty101
 
+### What does it do?
+Given a set of protein sequences, a phylogenetic tree which describes their evolutionary relationships and a statistical model of sequence evolution, calculate the probabilities of each possible substitution that could have occurred along a branch of interest.
+
+<p align="center">
+<img src="docs/tree.png" alt="Tree" width="300"/>
+</p>
+
 ## Running SubRecon
 Requires Java v1.8 or higher to run, Java Development Kit v1.8 or higher to compile.
 
