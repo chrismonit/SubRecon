@@ -21,8 +21,7 @@ In the example below, the observed data are the amino acids observed in each sam
 </p>
 
 ## Running SubRecon
-Requires Java v1.8 or higher to run, Java Development Kit v1.8 or higher to compile.
-
+Requires Java v1.8 or higher to run.
 [//]: # (TODO mention using the compile jar)
 
 The program options are as follows:
@@ -140,6 +139,8 @@ SubRecon/example includes an example dataset of primate lysozyme, described by M
 Tree estimated with RAxML 8, using WAG model. Rooted on branch of interest: that leading to the Colobinae.
 
 ## Compiling from source
+SubRecon requires Java Development Kit v1.8 or higher to compile.
+
 First clone or download this git repository and then compile using Apache Ant (http://ant.apache.org/).
 
   e.g. on Unix/Linux system:
