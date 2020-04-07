@@ -12,10 +12,12 @@ Details are given in the following paper. Please cite this if you use SubRecon o
 > phylogeny. *Bioinformatics*. DOI: 10.1093/bioinformatics/bty101
 
 ### What does it do?
-Given a set of protein sequences, a phylogenetic tree which describes their evolutionary relationships and a statistical model of sequence evolution, calculate the probabilities of each possible substitution that could have occurred along a branch of interest.
+Given a set of protein sequences, a phylogenetic tree which describes their evolutionary relationships and a statistical model of sequence evolution, SubRecon calculates the probabilities of each possible substitution that could have occurred along a branch of interest.
+
+In the example below, the observed data are the amino acids observed in each sampled organism (each *X_i*). We want to calculate the probabilities for the substitutions that may have happened along the ancestral branch shown in red; i.e. estimate the ancestral amino acids *Y_A* and *Y_B*. 
 
 <p align="center">
-<img src="docs/tree.png" alt="Tree" width="300"/>
+<img src="docs/tree.png" alt="Tree" width="900"/>
 </p>
 
 ## Running SubRecon
