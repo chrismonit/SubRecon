@@ -22,6 +22,7 @@ In the example below, the observed data are the amino acids observed in each sam
 
 ## Running SubRecon
 Requires Java v1.8 or higher to run.
+
 [//]: # (TODO mention using the compile jar)
 
 The program options are as follows:
