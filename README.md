@@ -17,7 +17,7 @@ Given a set of protein sequences, a phylogenetic tree which describes their evol
 In the example below, the observed data are the amino acids observed in each sampled organism (each *X_i*). We want to calculate the probabilities for the substitutions that may have happened along the ancestral branch shown in red; i.e. estimate the ancestral amino acids *Y_A* and *Y_B*. 
 
 <p align="center">
-<img src="docs/tree.png" alt="Tree" width="900"/>
+<img src="docs/tree.png" alt="Tree" width="600"/>
 </p>
 
 ## Running SubRecon
