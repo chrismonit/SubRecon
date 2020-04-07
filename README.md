@@ -21,11 +21,7 @@ In the example below, the observed data are the amino acids observed in each sam
 </p>
 
 ## Running SubRecon
-Requires Java v1.8 or higher to run.
-
-[//]: # (TODO mention using the compile jar)
-
-The program options are as follows:
+Requires Java v1.8 or higher to run. See the latest compiled version, under releases (or compile from source, see below). The program options are as follows:
 
 	$ java -jar SubRecon.jar 
 		-sequences <protein_sequence_alignment>
